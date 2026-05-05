@@ -119,6 +119,28 @@ Impact-focused (only `CALLS` / `DEPENDS_ON` / `IMPLEMENTS`):
 ckl query "ConfigLoader" --impact --depth 2 --pretty
 ```
 
+## When `ckl search` beats `ckl query`
+
+`ckl query` is hybrid (BM25 + semantic) and weights vector similarity strongly. That's optimal for **conceptual / multi-token** queries ("StoragePort", "deadlock retry strategy"), but it can hide the right hit on **short structured-ID queries** where the discriminating signal is in the literal token, not the semantics.
+
+| Query shape | Best tool | Why |
+|---|---|---|
+| Conceptual / multi-token (≥ 4 tokens) | `ckl query --enriched` | Vector embeddings catch related concepts even with different wording |
+| Short structured ID (`B4`, `M1`, `S2`, `v0.5.4`) | `ckl search --format compact` | BM25 weights literal IDs; vector signal is dominated by generic words like "backlog" |
+| Block ID directly | `ckl block <blk_id>` or `ckl query --from-block <blk_id>` | Skip search entirely |
+
+**Symptom:** if `ckl query "<short ID>"` returns top-5 hits dominated by generic blocks rather than the atom whose title contains your ID, retry with `ckl search "<short ID>" --format compact`. BM25's exact-token bias usually surfaces the correct match within the top results.
+
+```bash
+# Bad fit for query: short IDs swamped by vector noise
+ckl query "v0.5.4 backlog B4"  --limit 5  # may miss blk_96dcf4ffcaed_0
+
+# Good fit: BM25-leaning, surfaces literal ID matches
+ckl search "v0.5.4 backlog B4" --format compact
+```
+
+This is documented as gotcha atom `blk_2307b35fa77f_0` (v0.5.4 backlog B5).
+
 ### v0.5.x scoped examples
 
 Resolve project by name + filter to atoms held by a specific agent:

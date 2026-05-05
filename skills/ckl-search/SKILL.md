@@ -4,7 +4,7 @@ description: Use when the user wants to find code, navigate the knowledge graph,
 license: Apache-2.0
 compatibility: Requires `ckl` binary >= 0.5.3 on $PATH and a project indexed with `ckl index` (see ckl-system skill).
 metadata:
-  version: 0.2.0
+  version: 0.2.1
   upstream: https://github.com/koslab/ckl
   composes-with: ckl-edit, ckl-knowledge
   prerequisite: ckl-system
@@ -308,3 +308,4 @@ Falls back to `scripts/project-status.sh` for agents that don't expand `${CLAUDE
 6. **Daemon-lock trade-off (v0.5.2 / v0.5.3).** `ckl list all` and `ckl blob` *default / --info / --refs* modes briefly hold the SurrealKV lock. Only `ckl blob OID --raw` is fully lock-free. In long-running pipelines reading many blobs, prefer `--raw`.
 7. **`ckl blob OID` requires the full 40-char SHA-1.** Short prefixes are not currently expanded.
 8. `--kind` accepts only `code`, `claim`, `proof` (v0.5.0 AtomKind). Other strings error out.
+9. **Short structured-ID queries hit a retrieval gap in `ckl query`.** Hybrid scoring is dominated by vector similarity; literal IDs like `B4`, `M1`, `S2`, `v0.5.4` get drowned by generic words ("backlog", "fix"). Fall back to `ckl search "<id>" --format compact` (BM25-leaning) — see [references/query-flags.md § When `ckl search` beats `ckl query`](references/query-flags.md#when-ckl-search-beats-ckl-query). Tracked as atom `blk_2307b35fa77f_0`.
