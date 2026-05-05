@@ -5,6 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.1] - 2026-05-05
+
+Documentation hotfix for `ckl-search`. Adds guidance for the retrieval gap on
+short structured-ID queries (atom `blk_2307b35fa77f_0`, v0.5.4 backlog B5).
+
+### Added
+
+- **`ckl-search`**
+  - New `references/query-flags.md` § "When `ckl search` beats `ckl query`":
+    explains why short structured IDs (`B4`, `M1`, `v0.5.4`) get drowned by
+    vector similarity in `ckl query` and recommends `ckl search` (BM25-leaning).
+  - New gotcha #9 in `SKILL.md` cross-referencing the new section.
+
+### Changed
+
+- `ckl-search` skill `metadata.version`: 0.2.0 → 0.2.1.
+
 ## [0.2.0] - 2026-05-04
 
 Sync release. Bumps every skill from `ckl >= 0.4.9` to `ckl >= 0.5.3`, picking
