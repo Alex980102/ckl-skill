@@ -2,9 +2,9 @@
 name: ckl-edit
 description: Use when the user wants to modify code with provenance — edit existing files, write new files, rename, batch-refactor with rollback, or group ops into one auditable session. All edits emit Edit nutrients and auto-relate to the knowledge graph. Activate on mentions of "edit", "refactor", "rename", "create file", "fix", "change", "modify", "apply patch", "batch edit", or any file modification request in indexed projects.
 license: Apache-2.0
-compatibility: Requires `ckl` binary >= 0.4.9 on $PATH and a project indexed with `ckl index` (see ckl-system skill).
+compatibility: Requires `ckl` binary >= 0.5.3 on $PATH and a project indexed with `ckl index` (see ckl-system skill).
 metadata:
-  version: 0.1.0
+  version: 0.2.0
   upstream: https://github.com/koslab/ckl
   composes-with: ckl-search, ckl-knowledge
   prerequisite: ckl-system
@@ -126,3 +126,4 @@ This skill is one of five `ckl` skills. Use it together with:
 2. Always pass `--reason` on mutations — without it the change has no audit trail (and `ckl edit` rejects unless `--dry-run`).
 3. `ckl apply` exit code `4` (rollback-failed) is CRITICAL — disk/graph may be inconsistent. Inspect immediately.
 4. After raw text edits via the native `Edit` tool (no `ckl edit`), re-run `ckl index <path>` so the graph reflects the new state.
+5. The `edit` / `write` / `apply` / `mv` / `mkdir` / `rm` / `session` surface is unchanged from v0.4.x — v0.5.0–v0.5.3 added `Atom` / scoped search / `ckl blob`, but file-ops semantics (Edit nutrients, two-pass apply, exit codes) are stable. Pair with `ckl-knowledge` if you want the v0.5.0 JTB+S envelope (`--holder`, `--kind`, `--container`) on the rationale you capture alongside an edit.

@@ -42,6 +42,7 @@ Atoms never get hard-deleted from the active store — they move to `Archived` o
 - Always include `--type`, `--title`, and meaningful `--tags`.
 - Add `--rationale` for decisions.
 - Add `--source <file:line>` when the knowledge has a code origin.
+- **v0.5.0 envelope:** also pass `--holder <agent>`, `--kind <code|claim|proof>`, and (optionally) `--container <blk_xxx>`. See [atom.md](atom.md). Holder cascade: explicit > `$CKL_DEFAULT_HOLDER` > entity-derived > `unsigned` (audit-flagged).
 
 ### observe
 - Cheapest verb. Run it when you act on a pattern, follow a decision, or otherwise rely on an atom.

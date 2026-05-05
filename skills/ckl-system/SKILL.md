@@ -2,9 +2,9 @@
 name: ckl-system
 description: Use when the user wants to set up ckl, index a project for the first time, manage the daemon, configure auth/embeddings, watch for code or session changes, crawl documentation from URLs, or run storage migrations. This is the prerequisite skill for all other ckl skills — without `ckl index`, search/edit/knowledge/evolve do not work. Activate on mentions of "install ckl", "setup", "configure", "index project", "daemon", "MCP server", "crawl docs", "watch", "migrate", "reembed", "warm shards", "auth", or any ckl infrastructure / admin operation.
 license: Apache-2.0
-compatibility: Requires `ckl` binary >= 0.4.9 on $PATH. Some commands need write access to `~/.ckl/data/` and may require stopping the daemon first.
+compatibility: Requires `ckl` binary >= 0.5.3 on $PATH. Some commands need write access to `~/.ckl/data/` and may require stopping the daemon first.
 metadata:
-  version: 0.1.0
+  version: 0.2.0
   upstream: https://github.com/koslab/ckl
   composes-with: ckl-search, ckl-edit, ckl-knowledge, ckl-evolve
   prerequisite-for: all other ckl skills
@@ -15,7 +15,20 @@ metadata:
 
 Setup and administration for `ckl`. This is the **prerequisite skill** — without `ckl index`, none of the other ckl skills (search/edit/knowledge/evolve) have any data to operate on.
 
-**Binary:** `ckl` on `$PATH`. **DB:** `~/.ckl/data/ckl.skv` (SurrealKV). **Config:** `~/.ckl/settings.json`. **Vector index:** `~/.ckl/data/vectors/<project>.usearch` per project + `_orphan.usearch`.
+**Binary:** `ckl` on `$PATH`. **DB:** `~/.ckl/data/ckl.skv` (SurrealKV). **Config:** `~/.ckl/settings.json`. **Vector index:** `~/.ckl/data/vectors/<project>.usearch` per project + `_orphan.usearch`. **CAS blob store (v0.5.3):** `~/.ckl/blobs/` (gix-backed).
+
+## What's new in ckl 0.5.x
+
+This skill targets **ckl 0.5.3** — covers four minor releases since v0.4.9:
+
+| Release | Surface |
+|---|---|
+| `v0.5.0` Atomic Knowledge | `Atom` + JTB+S envelope (`--holder` / `--kind` / `--container`), `StoragePort` trait amendment, `ckl distill` (placeholder) |
+| `v0.5.1` Scoped Search II | scoped filters on `query` / `search` / `list` / `audit`, `ckl audit --persist-findings`, `--exclude-low` |
+| `v0.5.2` Agent-First Discovery | `ckl list all`, `--project-query` / `--org-query` / `--source-query` resolvers (substring → ID with 0/N error handling) |
+| `v0.5.3` Direct Blob Access | `ckl blob OID` (default / `--raw` / `--info` / `--refs`), `ckl blob list` |
+
+Per-skill detail: `ckl-search` covers scoping + blobs; `ckl-knowledge` covers JTB+S + AtomKind + distill; `ckl-evolve` covers severity-graded weak decisions + `atom_coverage`.
 
 ## Quick Reference
 
@@ -40,7 +53,7 @@ Deeper material: [references/setup.md](references/setup.md), [references/daemon.
 ## First-time setup
 
 ```bash
-# 1. Install
+# 1. Install (ckl >= 0.5.3 required for this skill suite)
 cargo install --git https://github.com/koslab/ckl ckl-cli
 
 # 2. Onboarding wizard
@@ -151,6 +164,24 @@ bash ${CLAUDE_SKILL_DIR}/scripts/reindex.sh [path]    # re-index after external 
 
 Falls back to `scripts/reindex.sh` for agents that don't expand `${CLAUDE_SKILL_DIR}`.
 
+## `ckl status` — what it reports
+
+```bash
+ckl status --pretty
+ckl status --project prj_xxx --pretty   # per-project filter
+```
+
+Fields (v0.5.3):
+
+- `blocks: { total, by_type }` — knowledge graph blocks
+- `documents`, `sources`, `projects` — counts
+- **`organizations`** (v0.5.1) — count
+- **`atoms: { total, by_kind: { code, claim, proof } }`** (v0.5.1) — Atom envelope counts
+- `vectors: { total, on_disk, by_project }` — vector shard layout
+- `daemon: { running, pid }` — daemon state
+
+Use `atoms.by_kind.claim` to gauge how much of the graph is JTB+S-enveloped knowledge vs structural code (`code`).
+
 ## Gotchas
 
 1. **Stop the daemon** before `reembed` or `migrate-vectors` on large thresholds: `ckl daemon stop`.
@@ -159,3 +190,5 @@ Falls back to `scripts/reindex.sh` for agents that don't expand `${CLAUDE_SKILL_
 4. `ckl-config` tests are environment-dependent: `cargo test --workspace --exclude ckl-config` for clean CI.
 5. `ckl index` is idempotent — re-running on the same path updates only changed files.
 6. After raw text edits outside `ckl edit/write/apply`, run `ckl index <path>` so the graph reflects the new state.
+7. **Daemon-lock trade-off (v0.5.2 / v0.5.3).** Most read commands are lock-free, but a few need exclusive DB access while the daemon is down: `ckl list all` (v0.5.2 enriched join), `ckl blob` default / `--info` / `--refs` modes (v0.5.3 — they touch SurrealKV for refs lookup). **Only `ckl blob OID --raw` is fully lock-free** (reads `~/.ckl/blobs/` directly via gix). If you script blob reads in a long-running pipeline, pass `--raw` to avoid contending with the daemon.
+8. **CAS store path (v0.5.3):** `~/.ckl/blobs/` is gix-backed. Don't manipulate it manually — use `ckl blob list` to enumerate and `ckl migrate-finalize` to GC.

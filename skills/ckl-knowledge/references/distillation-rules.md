@@ -104,3 +104,46 @@ The atom isn't connected to anything. Solution: always pass `--project` and `--e
 
 ### The "duplicate" anti-pattern
 Capturing the same insight repeatedly because each session feels novel. Solution: search first. Promote existing atoms instead of creating new ones.
+
+## `ckl distill` — automated decomposition (v0.5.0)
+
+When a single block already mixes multiple distillable insights, use `ckl distill` instead of capturing manually:
+
+```bash
+ckl distill --block blk_xxx --pretty               # default: max 3 atoms
+ckl distill --block blk_xxx --max-atoms 5 --pretty
+```
+
+Distill is **idempotent** — `AtomId::from_content` ensures re-running on the same block produces the same atom IDs. Safe to wire into a re-index hook.
+
+**v0.5.0 status:** placeholder. The implementation returns a single mirror atom (the input block, copied as a `claim`) plus a stderr warning. v0.5.x+ plugs in real LLM-driven 1:N decomposition that splits the block along the Curry-Howard tri-decomposition (one `claim` + N `proof` atoms typically).
+
+When to use it:
+
+- Long pre-v0.5.0 blocks needing explicit `Atom` envelopes to lift `atom_coverage`.
+- Blocks audit flags as severity-Medium (no `WARRANT`) — distillation often surfaces the missing rule as a separate atom.
+- Migrated text from `ckl compile` outputs that hit the "subheading" anti-pattern — distill them rather than re-capturing manually.
+
+**When NOT to use it:**
+
+- Already-atomic blocks (single `decision`/`gotcha` ≤ 300 tokens). Just `ckl capture` with the right envelope.
+- Pure structural code blocks. They're `kind=code` by default; distillation has nothing to extract.
+
+## JTB+S envelope on every capture (v0.5.0)
+
+Independently of distillation, every `ckl capture` should carry the v0.5.0 envelope:
+
+```bash
+ckl capture \
+  --title "..." --content "..." --type decision \
+  --kind claim \
+  --holder agent-claude \
+  --container blk_parent_section \
+  --project prj_xxx --entity entity_ckl --cycle --pretty
+```
+
+- Without `--holder` (and no `$CKL_DEFAULT_HOLDER` / entity-derived holder), the atom is recorded `unsigned` and `ckl audit` flags it as severity-High weak decision.
+- `--kind` defaults from `BlockType::is_structural()`; override only when capturing a `proof` (atom that backs another atom via `GROUNDS`).
+- `--container` is optional. Use it to nest the atom inside a parent block (e.g. all atoms about `blk_daemon_overview` should set `--container blk_daemon_overview`).
+
+Full anatomy: [atom.md](atom.md).

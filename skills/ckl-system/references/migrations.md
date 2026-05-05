@@ -68,6 +68,22 @@ ckl daemon start
 
 Each block re-embedded counts against your embeddings provider's quota. Use `--dry-run` first to see scope.
 
+## v0.5.0 — `StoragePort` trait amendment (L1b)
+
+v0.5.0 added Atom-aware methods to the `StoragePort` trait. **In-tree** implementations (`SurrealStore`) ship with the new methods. **Out-of-tree** implementors (custom storage backends) must add:
+
+```rust
+// New in v0.5.0 — Atom envelope persistence
+async fn create_atom(&self, atom: &Atom) -> Result<()>;
+async fn get_atom(&self, id: &AtomId) -> Result<Option<Atom>>;
+async fn list_atoms(&self, filter: AtomFilter) -> Result<Vec<Atom>>;
+async fn count_atoms_by_kind(&self) -> Result<AtomKindCounts>;
+```
+
+If you maintain a custom backend, add these methods before upgrading. The trait is **not** sealed — backwards-compatible only by being explicitly versioned. This is the only breaking change in the v0.5.x line.
+
+No data migration is required for the in-tree backend; existing blocks gain a default `Atom` envelope on next access (lazy upgrade), and `ckl status` will start reporting `atoms.{total, by_kind}` immediately.
+
 ## `ckl migrate` / `ckl migrate-finalize`
 
 Wave-6 migration: blocks > N tokens move from inline storage to a CAS (content-addressed) blob store.
