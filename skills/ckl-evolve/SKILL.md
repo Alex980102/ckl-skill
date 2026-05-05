@@ -1,10 +1,10 @@
 ---
 name: ckl-evolve
-description: Use when the user wants to run Kronos temporal evolution (cycles, weight updates, layer transitions Incoming→Low→Medium→High→Nucleus), check entity health (nucleus ratio, coherence, tensions), audit graph quality (duplicates, contradictions, weak decisions, stale blocks), reconcile via LLM, seed entities, ingest blocks, or graduate session entities to shared. Activate on mentions of "cycle", "evolve", "health", "coherence", "audit", "quality", "duplicates", "contradictions", "stale", "graduate", "Kronos", "seed entity", "tensions", or any temporal-evolution / quality request.
+description: Use when the user wants to run Kronos temporal evolution (cycles, weight updates, layer transitions Incoming→Low→Medium→High→Nucleus), check entity health (nucleus ratio, coherence, tensions), audit graph quality (duplicates, contradictions, severity-graded weak decisions, atom_coverage, stale blocks), persist audit findings as Claim atoms, reconcile via LLM, seed entities, ingest blocks, or graduate session entities to shared. Activate on mentions of "cycle", "evolve", "health", "coherence", "audit", "quality", "duplicates", "contradictions", "stale", "graduate", "Kronos", "seed entity", "tensions", "weak decisions", "severity", "atom coverage", "JTB+S", or any temporal-evolution / quality request.
 license: Apache-2.0
-compatibility: Requires `ckl` binary >= 0.4.9 on $PATH.
+compatibility: Requires `ckl` binary >= 0.5.3 on $PATH.
 metadata:
-  version: 0.1.0
+  version: 0.2.0
   upstream: https://github.com/koslab/ckl
   composes-with: ckl-knowledge
   prerequisite: ckl-system
@@ -31,6 +31,10 @@ Temporal evolution and quality control for the knowledge graph. Atoms move throu
 | `ckl backfill-part-of` | Backfill `PART_OF` edges for composite assets |
 | `ckl graduate --from <session_e> --to <shared_e>` | Promote mature atoms session → shared |
 | `ckl audit --pretty` | All quality checks (read-only, no LLM) |
+| `ckl audit --persist-findings --pretty` | v0.5.1: persist `weak_decisions` as `Claim` atoms held by `ckl-auditor` (idempotent) |
+| `ckl audit --exclude-low --pretty` | v0.5.0: suppress severity-Low weak decisions (atoms missing only `REBUTTAL`) |
+| `ckl audit --include-walton --pretty` | v0.5.0 placeholder for v0.6.1 Walton fallacy detection (no-op + warning) |
+| `ckl audit --project prj_xxx --pretty` | Scope `atom_coverage` + JTB weak_decisions to one project |
 | `ckl reconcile --duplicates` | LLM-driven resolution of dupes/contradictions |
 | `ckl clean --garbage --confirm` | Remove flagged artifacts |
 
@@ -86,7 +90,8 @@ ckl graduate --from session_entity --to shared_entity --pretty
 | `duplicates` | Semantically similar block pairs |
 | `contradictions` | Negation patterns + topic overlap |
 | `stale` | Blocks not accessed in N days (`--stale-days 30` default) |
-| `weak_decisions` | `decision` atoms without `GROUNDS`/`SUPPORTS`, or backed but missing `WARRANT`/`REBUTTAL` |
+| `weak_decisions` | `decision` atoms without `GROUNDS`/`SUPPORTS`, or backed but missing `WARRANT`/`REBUTTAL` (severity-graded — see below) |
+| `atom_coverage` | v0.5.1: ratio of blocks with at least one Atom envelope. Healthy threshold: `0.7` |
 
 ```bash
 ckl audit --pretty                                # all checks
@@ -94,9 +99,73 @@ ckl audit --duplicates --pretty
 ckl audit --garbage --contradictions --pretty
 ckl audit --stale --stale-days 60 --pretty
 ckl audit --include-linked --pretty               # show pairs already SEE_ALSO/SUPERSEDES
+ckl audit --persist-findings --pretty             # v0.5.1: store findings as Claim atoms
+ckl audit --exclude-low --pretty                  # v0.5.0: drop severity=Low (no REBUTTAL only)
+ckl audit --project prj_xxx --pretty              # scope atom_coverage + JTB weak_decisions
 ```
 
 Full check semantics: [references/audit.md](references/audit.md).
+
+## Severity-graded `weak_decisions` (v0.5.0)
+
+`ckl audit` now grades each weak `decision` atom by **severity**, mapping the Toulmin gaps onto a triage scale:
+
+| Severity | Cause | Hint |
+|---|---|---|
+| **High** | Missing `GROUNDS` and `SUPPORTS`, OR `holder=None` (no JTB+S source) | Claim is unbacked / unsigned. Add `ckl relate <fact> <decision> --kind GROUNDS` or capture with `--holder`. |
+| **Medium** | Has grounds/support but no `WARRANT` | Argument lacks the inference rule connecting data → claim. Add `ckl relate <rule> <decision> --kind WARRANT`. |
+| **Low** | Has grounds + warrant but no `REBUTTAL` | "Thin argument" — defensible but no falsification clause documented. Add `ckl relate <cond> <decision> --kind REBUTTAL`, or filter with `--exclude-low`. |
+
+Use `--exclude-low` in CI / pre-merge audits where Low-severity findings are advisory and would otherwise dominate the report.
+
+## `atom_coverage` (v0.5.1)
+
+A new audit metric tracks how much of the graph carries the v0.5.0 `Atom` envelope:
+
+```json
+"atom_coverage": {
+  "blocks_total": 320,
+  "blocks_with_atoms": 240,
+  "coverage_ratio": 0.75,
+  "healthy_threshold": 0.7
+}
+```
+
+Below `0.7` → most blocks are pre-v0.5.0 / lazy-upgraded but never explicitly enveloped. Remedies:
+
+- Re-capture key decisions with explicit `--holder`/`--kind`/`--container` (see `ckl-knowledge`).
+- Run `ckl distill --block <blk>` on long, mixed-content blocks to decompose them into typed atoms.
+- Scope per-project with `--project prj_xxx` to find which area of the graph is undersigned.
+
+## `WeakDecision` as a first-class `Atom` (v0.5.1)
+
+`ckl audit --persist-findings` writes each weak decision as a `Claim` atom held by the synthetic agent **`ckl-auditor`**. Determinism is enforced via `AtomId::from_content` (idempotent — re-running with the same finding never creates a duplicate):
+
+```bash
+ckl audit --persist-findings --pretty
+# Then query the persisted findings:
+ckl list atoms --holder ckl-auditor --kind claim --pretty
+ckl query "weak decision" --holder ckl-auditor --enriched --pretty
+```
+
+**Default is OFF** — audit stays a pure read-only operation unless you opt in. Use this flag in scheduled jobs / dashboards that need to track findings over time without re-running the audit.
+
+## JTB+S enforcement (v0.5.0)
+
+Audit now treats `holder=None` (atom captured without an explicit holder, no `$CKL_DEFAULT_HOLDER`, no entity-derived holder) as a **High-severity** weak decision. Reason: per JTB+S (Justified True Belief + Source), an atom without a holder is unsigned belief — semantically untrustworthy.
+
+`ckl capture` warns to stderr when it falls back to `unsigned`:
+
+```text
+warning: capturing without a holder; atom recorded as `unsigned`. Set --holder, $CKL_DEFAULT_HOLDER, or --entity to assign a holder.
+```
+
+Cascade resolution order (first match wins):
+
+1. Explicit `--holder <id>`
+2. `$CKL_DEFAULT_HOLDER` env var
+3. Entity-derived holder (from `entity.principal_holder` if seeded)
+4. `unsigned` (triggers severity-High weak_decision on next audit)
 
 ## Quality gates
 
@@ -109,6 +178,7 @@ Targets for a healthy entity:
 | `non_structural` (semantic edges share) | ≥ 0.25 |
 | `coherence` (entity coherence score) | ≥ 0.8 |
 | `nucleus_ratio` | reported by `ckl health` |
+| `atom_coverage` (v0.5.1) | ≥ 0.7 (blocks with at least one `Atom` envelope) |
 
 Full gate definitions: [references/quality-gates.md](references/quality-gates.md).
 

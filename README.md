@@ -52,11 +52,22 @@ npx skills add koslab/ckl-skill/ckl-search
 
 ## Prerequisites
 
-- `ckl` binary >= 0.4.9 on `$PATH`. Install:
+- `ckl` binary >= **0.5.3** on `$PATH`. Install:
   ```bash
   cargo install --git https://github.com/koslab/ckl ckl-cli
   ```
 - An indexed project: `ckl index /path/to/your/repo`
+
+### What's new in ckl 0.5.x (this skill release)
+
+This is `ckl-skill` v0.2.0, which targets ckl 0.5.3. The skills now cover four new ckl minor releases since v0.4.9:
+
+| ckl release | Adds | Skill that documents it |
+|---|---|---|
+| `v0.5.0` Atomic Knowledge | `Atom` envelope, JTB+S (`--holder` / `--kind` / `--container`), Curry-Howard tri-decomposition (Code/Claim/Proof), `ckl distill`, severity-graded `weak_decisions`, `StoragePort` trait amendment | `ckl-knowledge`, `ckl-evolve`, `ckl-system` |
+| `v0.5.1` Scoped Search II | Unified scope filters (`--org` / `--source-id` / `--holder` / `--kind` / `--container`) on `query` / `search` / `list` / `audit`, `ckl audit --persist-findings`, `--exclude-low`, `atom_coverage` metric, `ckl list organizations \| atoms` | `ckl-search`, `ckl-evolve` |
+| `v0.5.2` Agent-First Discovery | `ckl list all`, `--project-query` / `--org-query` / `--source-query` substring → ID resolvers | `ckl-search` |
+| `v0.5.3` Direct Blob Access | `ckl blob OID` (default / `--raw` / `--info` / `--refs`), `ckl blob list`, gix-backed CAS at `~/.ckl/blobs/` | `ckl-search`, `ckl-system` |
 
 ## Repository layout
 
@@ -75,7 +86,7 @@ ckl-skill/
 │   ├── ckl-search/
 │   │   ├── SKILL.md
 │   │   ├── icon.svg
-│   │   ├── references/           # query-flags, navigate
+│   │   ├── references/           # query-flags, navigate, blob (v0.5.3)
 │   │   └── scripts/              # project-status.sh
 │   ├── ckl-edit/
 │   │   ├── SKILL.md
@@ -84,7 +95,7 @@ ckl-skill/
 │   ├── ckl-knowledge/
 │   │   ├── SKILL.md
 │   │   ├── icon.svg
-│   │   └── references/           # cip, knowledge-types, distillation-rules, argument-relations
+│   │   └── references/           # cip, knowledge-types, distillation-rules, argument-relations, atom (v0.5.0)
 │   └── ckl-evolve/
 │       ├── SKILL.md
 │       ├── icon.svg

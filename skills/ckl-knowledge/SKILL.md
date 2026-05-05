@@ -1,14 +1,14 @@
 ---
 name: ckl-knowledge
-description: Use when the user wants to capture decisions/patterns/gotchas/lessons via the Capture/Intent Protocol (CIP), create typed argument edges (Toulmin model — SUPPORTS, GROUNDS, WARRANT, REBUTTAL), compile a structured episode into atoms, or back up/restore the knowledge graph (export/import). AGM-grounded belief revision semantics map directly to capture/promote/resolve/archive/deprecate intents. Activate on mentions of "capture", "decision", "pattern", "gotcha", "lesson", "rationale", "why we", "argument", "evidence", "Toulmin", "AGM", "supersede", "export knowledge", or any knowledge-graph mutation.
+description: Use when the user wants to capture decisions/patterns/gotchas/lessons via the Capture/Intent Protocol (CIP) with the v0.5.0 JTB+S envelope (holder/kind/container), distill a block into pure-knowledge atoms (Curry-Howard tri-decomposition Code/Claim/Proof), create typed argument edges (Toulmin model — SUPPORTS, GROUNDS, WARRANT, REBUTTAL), compile a structured episode into atoms, or back up/restore the knowledge graph (export/import). AGM-grounded belief revision semantics map directly to capture/promote/resolve/archive/deprecate intents. Activate on mentions of "capture", "decision", "pattern", "gotcha", "lesson", "rationale", "why we", "argument", "evidence", "Toulmin", "AGM", "supersede", "JTB+S", "Atom", "AtomKind", "Curry-Howard", "distill", "holder", "container", "export knowledge", or any knowledge-graph mutation.
 license: Apache-2.0
-compatibility: Requires `ckl` binary >= 0.4.9 on $PATH, an entity created via `ckl seed` (see ckl-evolve), and a project indexed (see ckl-system).
+compatibility: Requires `ckl` binary >= 0.5.3 on $PATH, an entity created via `ckl seed` (see ckl-evolve), and a project indexed (see ckl-system).
 metadata:
-  version: 0.1.0
+  version: 0.2.0
   upstream: https://github.com/koslab/ckl
   composes-with: ckl-evolve, ckl-search
   prerequisite: ckl-system, ckl-evolve
-  primary-commands: capture, observe, promote, resolve, archive, deprecate, do, knowledge, relate, compile, compile-relations, delete, export, import
+  primary-commands: capture, distill, observe, promote, resolve, archive, deprecate, do, knowledge, relate, compile, compile-relations, delete, export, import
 ---
 
 # CKL Knowledge
@@ -22,6 +22,8 @@ Mutate the knowledge graph: capture atoms via CIP, link them with typed argument
 | Command | Purpose |
 |---|---|
 | `ckl capture --title --content --type --entity --cycle` | CIP: dedup + auto-relate + optional post-cycle (preferred) |
+| `ckl capture ... --holder --kind --container` | v0.5.0: attach JTB+S envelope (signer + AtomKind + container block) |
+| `ckl distill --block blk_xxx [--max-atoms N]` | v0.5.0: decompose a block into pure-knowledge atoms (idempotent via `AtomId::from_content`). Currently a placeholder mirror; v0.5.x+ plugs in LLM decomposition. |
 | `ckl observe --query --entity` | Search with `Query` nutrient tracking |
 | `ckl promote --block --entity --boost` | Boost an atom's weight (validation) |
 | `ckl resolve --block --title --content --supersede` | Close a gap with resolution + supersede edge |
@@ -36,7 +38,7 @@ Mutate the knowledge graph: capture atoms via CIP, link them with typed argument
 | `ckl export --output backup.json` | Dump graph to JSON |
 | `ckl import --input backup.json` | Restore from JSON |
 
-Deeper material: [references/cip.md](references/cip.md), [references/knowledge-types.md](references/knowledge-types.md), [references/distillation-rules.md](references/distillation-rules.md), [references/argument-relations.md](references/argument-relations.md).
+Deeper material: [references/atom.md](references/atom.md) (v0.5.0 Atom + JTB+S anatomy), [references/cip.md](references/cip.md), [references/knowledge-types.md](references/knowledge-types.md), [references/distillation-rules.md](references/distillation-rules.md), [references/argument-relations.md](references/argument-relations.md).
 
 ## Capture (default path: CIP)
 
@@ -50,6 +52,77 @@ ckl capture \
 ```
 
 `ckl capture` runs CIP: auto-dedup + auto-relate + optional `--cycle` post-evolution. Always scope with `--project` and `--entity`, otherwise the atom is orphaned.
+
+## JTB+S envelope (v0.5.0)
+
+ckl 0.5.0 wraps every captured atom in an envelope inspired by the **Justified True Belief + Source** epistemic schema. Three new flags on `ckl capture` (and any CIP intent) attach the envelope:
+
+| Flag | Field | Meaning |
+|---|---|---|
+| `--holder <id>` | `holder` | The agent/principal asserting the atom (`agent-claude`, `user-alice`, `ckl-auditor`). Without it, atoms are recorded `unsigned` and audited as severity-High weak decisions. |
+| `--kind <code\|claim\|proof>` | `AtomKind` | Curry-Howard category — see below. Defaults from `BlockType::is_structural()` (structural → `code`, knowledge → `claim`). |
+| `--container <blk_xxx>` | `container` | The containing block. `None` = top-level atom. Use to nest atoms inside a function/section/document. |
+
+```bash
+ckl capture \
+  --title "Daemon holds DB lock during MCP proxy — stop before reembed" \
+  --content "..." \
+  --type gotcha \
+  --kind claim --holder agent-claude \
+  --container blk_daemon_overview \
+  --project prj_xxx --entity entity_ckl --pretty
+```
+
+**Holder cascade** (first match wins):
+
+1. Explicit `--holder <id>`
+2. `$CKL_DEFAULT_HOLDER` env var
+3. Entity-derived holder (from `entity.principal_holder`)
+4. `unsigned` (and stderr warning)
+
+Set `CKL_DEFAULT_HOLDER` once per session to avoid passing `--holder` on every call:
+
+```bash
+export CKL_DEFAULT_HOLDER=agent-claude
+ckl capture --title "..." --content "..." --type decision  # holder=agent-claude
+```
+
+## AtomKind — Curry-Howard tri-decomposition (v0.5.0)
+
+The Curry-Howard correspondence (programs ≡ proofs) splits knowledge into three primitive kinds:
+
+| `AtomKind` | What it is | Typical block types | Example |
+|---|---|---|---|
+| `code` | Executable structure (the *program*) | function, struct, module, fact | a `fn` declaration; `vector_dim = 1024` |
+| `claim` | Asserted knowledge (the *proposition*) | decision, pattern, gotcha, rule, lesson | "MVCC prevents write conflicts"; "always pass --reason" |
+| `proof` | Justification of a claim (the *derivation*) | grounded reasoning, benchmarks, formal arguments | "benchmarks at /bench/x.rs show 3× speedup" linked via `GROUNDS` |
+
+Defaults: structural blocks (functions, types, files) → `code`; knowledge blocks (decisions, gotchas) → `claim`. Override with `--kind proof` when you capture an atom whose role is to back another claim.
+
+`ckl status --pretty` reports `atoms.by_kind: { code, claim, proof }` so you can see the shape of your graph at a glance.
+
+## `ckl distill` (v0.5.0 — placeholder)
+
+```bash
+ckl distill --block blk_xxx --pretty
+ckl distill --block blk_xxx --max-atoms 5 --pretty
+```
+
+`ckl distill` decomposes a single block into 1..N pure-knowledge atoms. **Idempotent** — `AtomId` is computed via `AtomId::from_content` (deterministic SHA over `kind|holder|content`), so re-running on the same block produces identical IDs and never duplicates.
+
+| Flag | Effect |
+|---|---|
+| `--block <blk_xxx>` | Source block (required) |
+| `--max-atoms N` | Hint for the LLM decomposer (default 3) |
+| `--pretty` | Human-readable JSON |
+
+**v0.5.0 status:** placeholder. Returns a single mirror atom (the input block, copied as a `claim`) plus a warning. v0.5.x+ plugs in real LLM-driven 1:N decomposition. Use it now to pre-allocate the workflow — when the real decomposer ships your scripts will benefit automatically.
+
+When to distill:
+
+- A long block mixes a decision with multiple supporting facts → split into one `claim` + several `proof` atoms.
+- Migrated pre-v0.5.0 blocks need explicit `Atom` envelopes to lift `atom_coverage`.
+- Audit reports a block with high token count and severity-Medium weak decision (no WARRANT) — distillation often surfaces the missing rule.
 
 ## `capture` vs `knowledge` vs `compile`
 
@@ -167,3 +240,6 @@ This skill is one of five `ckl` skills. Use it together with:
 4. `ckl capture` does NOT accept `--related`. Use `ckl knowledge --related blk_a,blk_b` at creation, or `ckl relate <src> <dst> --kind <KIND>` afterward.
 5. Always scope with `--project` and `--entity`. Without them atoms are orphaned and `ckl audit` will flag them.
 6. `ckl deprecate` is **irreversible** without manual fix. Use `ckl archive` if you might want it back.
+7. **`--holder` on every capture (v0.5.0).** Without it the atom is recorded `unsigned` and audited as a severity-High weak decision. Set `$CKL_DEFAULT_HOLDER=agent-<name>` once per session as a safety net.
+8. **`AtomId::from_content` is deterministic.** `ckl distill` re-runs on the same block produce identical IDs — never duplicates. Free-form `AtomId` (when you mint one programmatically) is **not** automatically deduped against `from_content` IDs; prefer `from_content` unless you have a reason.
+9. `ckl distill` in v0.5.0 is a **placeholder** — it returns a single mirror atom + warning. Real LLM decomposition lands in a future minor. Scripts can adopt the flag now safely.

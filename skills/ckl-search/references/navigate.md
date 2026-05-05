@@ -76,16 +76,20 @@ ckl doc --name "storage.rs" --with-blocks              # by file name
 ckl list <what> [filters]
 ```
 
-`<what>` is one of: `blocks`, `sources`, `projects`, `documents`. **Plural `documents`, NOT `docs`** (returns `"Unknown list target: docs"`).
+`<what>` is one of: `all` (v0.5.2), `blocks`, `sources`, `projects`, `documents`, `organizations` (v0.5.1), `atoms` (v0.5.1), `entities`. **Plural `documents`, NOT `docs`** (returns `"Unknown list target: docs"`).
 
 ### Common filters
 
 | Flag | Effect |
 |---|---|
-| `--source <src_id>` | Limit to one source |
+| `--source <src_id>` / `--source-query <text>` (v0.5.2) | Limit to one source (literal ID or substring resolver) |
 | `-t <type>` | Content type: `code`, `knowledge`, `conversation` |
-| `--query <text>` | Substring match on names |
-| `--project <prj_id>` | Project-scoped |
+| `--query <text>` | Text filter over name / location / path |
+| `--type <csv>` | (`list all` only) CSV subset: `organizations\|orgs`, `projects\|prjs`, `sources\|srcs`, `documents\|docs` |
+| `--project <prj_id>` / `--project-query <text>` (v0.5.2) | Project scope |
+| `--kind <code\|claim\|proof>` (v0.5.1) | (`atoms` only) Filter by AtomKind |
+| `--holder <agent>` (v0.5.1) | (`atoms` only) Filter by holder |
+| `--container <blk_xxx>` (v0.5.1) | (`atoms` only) Filter by container block |
 | `--path <glob>` | Path-glob filter |
 | `--limit N` | Default 50 |
 | `--offset N` | Pagination |
@@ -99,7 +103,38 @@ ckl list blocks --path "crates/ckl-temporal/**" --pretty
 ckl list documents --project prj_xxx --pretty
 ckl list sources --pretty
 ckl list projects --pretty
+
+# v0.5.1+ targets
+ckl list organizations --pretty
+ckl list atoms --kind claim --holder agent-claude --pretty
+ckl list atoms --container blk_xxx --pretty
+ckl list entities --pretty
 ```
+
+### `ckl list all` (v0.5.2)
+
+Aggregates Organizations + Projects + Sources + Documents into one grouped JSON response. Combine with `--query` (text filter) and `--type` (CSV subset):
+
+```bash
+ckl list all --pretty                                       # everything
+ckl list all --query "ckl" --pretty                         # name/path substring
+ckl list all --type orgs,projects --pretty                  # subset
+ckl list all --type documents --query "storage.rs" --pretty
+```
+
+## `blob` (v0.5.3)
+
+```bash
+ckl blob <OID>                              # JSON envelope (default)
+ckl blob <OID> --raw                         # raw bytes (lock-free)
+ckl blob <OID> --info --pretty               # metadata only
+ckl blob <OID> --refs --pretty               # reverse-lookup blocks
+ckl blob list --pretty                       # enumerate loose objects
+```
+
+OID is the full 40-char SHA-1. Reads from gix-backed CAS at `~/.ckl/blobs/`. **Only `--raw` is fully lock-free.**
+
+Full reference: [blob.md](blob.md).
 
 ## When to use which
 
@@ -111,4 +146,7 @@ ckl list projects --pretty
 | Multi-hop walk | `ckl traverse` |
 | Full document | `ckl doc --with-blocks` |
 | Enumerate by filter | `ckl list <what>` |
+| Discovery (orgs+projects+sources+docs) | `ckl list all --query <text>` (v0.5.2) |
+| List atoms by envelope | `ckl list atoms --kind --holder --container` (v0.5.1) |
+| Read blob content by OID | `ckl blob <OID> [--raw]` (v0.5.3) |
 | Combine all | `ckl query --enriched` (one call) |

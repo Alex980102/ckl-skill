@@ -39,14 +39,34 @@ Exactly one is required.
 
 ## Filters
 
-| Flag | Effect |
-|---|---|
-| `--project <prj_id>` | Limit to one project |
-| `-t <type>` | Filter by content type: `code`, `knowledge`, `conversation`, `documentation` |
-| `--path-pattern <glob>` | Limit by file path |
-| `--max-per-doc N` | Cap blocks returned from a single document |
-| `--entity <id>` | Auto-record `Query` nutrient against this entity |
-| `--impact` | Prioritize non-structural relationships only |
+| Flag | Since | Effect |
+|---|---|---|
+| `--project <prj_id>` | 0.4.x | Limit to one project |
+| `--project-query <text>` | **0.5.2** | Substring → `prj_xxx` (errors if 0 or 2+ matches). Mutually exclusive with `--project`. |
+| `--org <org_id>` | **0.5.1** | Limit to one organization |
+| `--org-query <text>` | **0.5.2** | Substring → `org_xxx` |
+| `--source-id <src_id>` | **0.5.1** | Limit to one source |
+| `--source-query <text>` | **0.5.2** | Substring (name OR path) → `src_xxx` |
+| `--holder <agent>` | **0.5.1** | Filter atoms by holder (`agent-claude`, `ckl-auditor`, `user-alice`) |
+| `--kind <code\|claim\|proof>` | **0.5.1** | Filter atoms by Curry-Howard kind |
+| `--container <blk_xxx>` | **0.5.1** | Filter atoms by their containing block |
+| `-t <type>` | 0.4.x | Content type: `code`, `knowledge`, `conversation`, `documentation` |
+| `--path-pattern <glob>` | 0.4.x | Limit by file path |
+| `--max-per-doc N` | 0.4.x | Cap blocks returned from a single document |
+| `--entity <id>` | 0.4.x | Auto-record `Query` nutrient against this entity |
+| `--impact` | 0.4.x | Prioritize non-structural relationships only |
+| `--at <time>` | 0.4.x | Time-travel (also see Time-travel section) |
+
+The same six scope filters (`--org`, `--project`, `--source-id`, `--holder`, `--kind`, `--container`) are also accepted by `ckl search`, `ckl list`, and `ckl audit` (where applicable) — they form the v0.5.1 unified scoping vocabulary.
+
+### Resolver error semantics (v0.5.2)
+
+The three `--*-query` resolvers require **exactly one** match:
+
+- `0 matches` → error: `no project matches '<text>'`
+- `2+ matches` → error listing candidates: `ambiguous: prj_aa7f, prj_bb12 — use --project <id>`
+
+Use the literal-ID flag (`--project <id>` etc.) when you've identified the right candidate, or refine the substring.
 
 ## Output control
 
@@ -97,4 +117,26 @@ ckl query "deprecated_api" --at "2025-12-01T00:00:00Z" --pretty
 Impact-focused (only `CALLS` / `DEPENDS_ON` / `IMPLEMENTS`):
 ```bash
 ckl query "ConfigLoader" --impact --depth 2 --pretty
+```
+
+### v0.5.x scoped examples
+
+Resolve project by name + filter to atoms held by a specific agent:
+```bash
+ckl query "MVCC" \
+  --project-query "ckl-engine" \
+  --kind claim --holder agent-claude \
+  --enriched --pretty
+```
+
+Find proof atoms inside a containing block (drill from claim → its supporting evidence):
+```bash
+ckl query --from-block blk_decision_xxx \
+  --kind proof --container blk_decision_xxx \
+  --traverse --pretty
+```
+
+Cross-source query (substring match on source name/path):
+```bash
+ckl query "rate limiter" --source-query "core/storage" --enriched --pretty
 ```

@@ -18,6 +18,7 @@ Quality gates are advisory thresholds. They don't block operations, but they tel
 | `coherence` | `ckl health` | Entity coherence score (0..1) — how well atoms agree on subjects |
 | `nucleus_ratio` | `ckl health` | Fraction of atoms in the Nucleus layer |
 | `tensions` | `ckl health` | Count of unresolved contradictions / weak decisions |
+| `atom_coverage` | `ckl audit` (v0.5.1) | Share of blocks with at least one `Atom` envelope. Healthy ≥ `0.7`. |
 
 ## How to read `ckl health`
 
@@ -59,6 +60,7 @@ Interpretation:
 | `coherence` | ≥ 0.8 | Too low = contradictions piling up | `ckl audit --contradictions --pretty`, then `ckl reconcile` |
 | `nucleus_ratio` | grows over time | Stagnant = atoms not stabilizing | Run `ckl cycle` more often or `ckl promote` validated atoms |
 | `tensions` | 0 | Any > 0 = unresolved issue | `ckl audit --pretty` to find them |
+| `atom_coverage` | ≥ 0.7 | Below = many blocks lack `Atom` envelope (pre-v0.5.0 lazy upgrades) | Re-capture with `--holder`/`--kind`/`--container`; or `ckl distill --block <blk>` to decompose. Scope per-project: `ckl audit --project prj_xxx --pretty`. |
 
 These targets are heuristics from production CKL deployments, not hard limits. A research project may tolerate higher `unresolved` while a production codebase wants it lower.
 
