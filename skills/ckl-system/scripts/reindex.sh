@@ -7,7 +7,7 @@
 # Defaults to the current directory. Re-runs the full ckl indexer
 # (BM25 + semantic + graph) and prints updated stats.
 #
-# Requires: ckl >= 0.4.9 on $PATH.
+# Requires: ckl >= 0.5.5 on $PATH.
 
 set -euo pipefail
 

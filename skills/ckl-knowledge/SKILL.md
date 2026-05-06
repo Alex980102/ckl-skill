@@ -1,10 +1,10 @@
 ---
 name: ckl-knowledge
-description: Use when the user wants to capture decisions/patterns/gotchas/lessons via the Capture/Intent Protocol (CIP) with the v0.5.0 JTB+S envelope (holder/kind/container), distill a block into pure-knowledge atoms (Curry-Howard tri-decomposition Code/Claim/Proof), create typed argument edges (Toulmin model — SUPPORTS, GROUNDS, WARRANT, REBUTTAL), compile a structured episode into atoms, or back up/restore the knowledge graph (export/import). AGM-grounded belief revision semantics map directly to capture/promote/resolve/archive/deprecate intents. Activate on mentions of "capture", "decision", "pattern", "gotcha", "lesson", "rationale", "why we", "argument", "evidence", "Toulmin", "AGM", "supersede", "JTB+S", "Atom", "AtomKind", "Curry-Howard", "distill", "holder", "container", "export knowledge", or any knowledge-graph mutation.
+description: Use when the user wants to capture decisions/patterns/gotchas/lessons via the Capture/Intent Protocol (CIP) with the v0.5.0 JTB+S envelope (holder/kind/container), distill a block into pure-knowledge atoms (Curry-Howard tri-decomposition Code/Claim/Proof), create typed argument edges (Toulmin model — SUPPORTS, GROUNDS, WARRANT, REBUTTAL), compile a structured episode into atoms, or back up/restore the knowledge graph (export/import). Also covers the v0.5.5 atom-as-invariant pattern and the Lens / MarkdownLens bidirectional projection stack (Foster et al. 2007 well-behaved-lens law, AtomDiff, LensVerifier). AGM-grounded belief revision semantics map directly to capture/promote/resolve/archive/deprecate intents. Activate on mentions of "capture", "decision", "pattern", "gotcha", "lesson", "rationale", "why we", "argument", "evidence", "Toulmin", "AGM", "supersede", "JTB+S", "Atom", "AtomKind", "Curry-Howard", "distill", "holder", "container", "export knowledge", "Lens", "MarkdownLens", "atom-as-invariant", "AtomDiff", "round-trip", "Foster lens", or any knowledge-graph mutation.
 license: Apache-2.0
-compatibility: Requires `ckl` binary >= 0.5.3 on $PATH, an entity created via `ckl seed` (see ckl-evolve), and a project indexed (see ckl-system).
+compatibility: Requires `ckl` binary >= 0.5.5 on $PATH, an entity created via `ckl seed` (see ckl-evolve), and a project indexed (see ckl-system).
 metadata:
-  version: 0.2.0
+  version: 0.2.2
   upstream: https://github.com/koslab/ckl
   composes-with: ckl-evolve, ckl-search
   prerequisite: ckl-system, ckl-evolve
@@ -38,7 +38,7 @@ Mutate the knowledge graph: capture atoms via CIP, link them with typed argument
 | `ckl export --output backup.json` | Dump graph to JSON |
 | `ckl import --input backup.json` | Restore from JSON |
 
-Deeper material: [references/atom.md](references/atom.md) (v0.5.0 Atom + JTB+S anatomy), [references/cip.md](references/cip.md), [references/knowledge-types.md](references/knowledge-types.md), [references/distillation-rules.md](references/distillation-rules.md), [references/argument-relations.md](references/argument-relations.md).
+Deeper material: [references/atom.md](references/atom.md) (v0.5.0 Atom + JTB+S anatomy + v0.5.5 AtomDiff), [references/cip.md](references/cip.md), [references/knowledge-types.md](references/knowledge-types.md), [references/distillation-rules.md](references/distillation-rules.md), [references/argument-relations.md](references/argument-relations.md).
 
 ## Capture (default path: CIP)
 
@@ -100,6 +100,114 @@ The Curry-Howard correspondence (programs ≡ proofs) splits knowledge into thre
 Defaults: structural blocks (functions, types, files) → `code`; knowledge blocks (decisions, gotchas) → `claim`. Override with `--kind proof` when you capture an atom whose role is to back another claim.
 
 `ckl status --pretty` reports `atoms.by_kind: { code, claim, proof }` so you can see the shape of your graph at a glance.
+
+## Atom-as-invariant pattern (v0.5.5)
+
+Tracked as atom `blk_481254a21827_0`. Knowledge atoms are **invariant**; code, ADRs, tests, docs, and Markdown are **projections** compiled per audience.
+
+```text
+                         atom (canonical, signed, JTB+S-enveloped)
+                              │
+        ┌─────────────────────┼─────────────────────┐
+        │                     │                     │
+     Code lens            Markdown lens          Test lens
+   (M2 — Rust src)       (M1 — README/ADR)      (proof harness)
+```
+
+The atom is the **source of truth**. A projection is a *view*: when a user edits the view, a `Lens::put` lifts the edit back into the atom (or rejects it as out-of-scope). This pattern is the operational core of v0.5.5 and unifies several historically separate workflows under one invariant.
+
+**Lineage** (the pattern is not new — v0.5.5 is its first first-class CKL implementation):
+
+- **Knuth, *Literate Programming* (1984)** — one TeX source compiles to documentation *and* compilable code (`weave` / `tangle`).
+- **OMG DMN 1.1 (2014)** — decision tables are the invariant; code, docs, and audit reports are generated views.
+- **Lean Mathlib `extraction` (current)** — proofs are the invariant; OCaml/Haskell code is extracted.
+- **Model-Driven Engineering (MDE)** — the model is the invariant; multiple platforms are projected.
+
+CKL's contribution is to anchor the invariant in JTB+S-signed atoms and to enforce the law via `LensVerifier::verify_round_trip`.
+
+## Lens trait overview (v0.5.5)
+
+Tracked as atom `blk_c0574a3ddc2e_0`. Foundation lives in the `ckl-lens` crate. **No CLI surface yet** — the v0.5.5 release is a library-level addition. Custom downstream tooling (in-app editors, sync agents) implements these traits.
+
+```rust
+// ckl-lens/src/lens.rs
+pub trait Compiler {
+    type Target;
+    fn compile(&self, atom: &Atom) -> Result<Self::Target, LensError>;
+}
+
+pub trait Lens: Compiler {
+    fn put(&self, atom: &Atom, edited: &Self::Target) -> Result<AtomDiff, LensError>;
+}
+```
+
+- `Compiler` is the **one-way** half (read-only views: HTML preview, dashboard rendering).
+- `Lens` extends `Compiler` with `put` so edits **lift back** to an `AtomDiff`. This is the core bidirectional contract.
+
+### Foster et al. 2007 well-behaved-lens law
+
+Every `Lens` implementation must satisfy:
+
+```text
+put(atom, get(atom)) == identity AtomDiff
+```
+
+In words: re-projecting an atom and pushing the *unmodified* projection back through `put` must produce no change. Information leaks (`compile` drops a field that `put` cannot reconstruct) and over-eager `put` implementations (manufacturing diffs from idempotent input) both violate this law.
+
+```rust
+LensVerifier::verify_round_trip<L: Lens>(lens: &L, atom: &Atom) -> Result<(), LensError>
+LensVerifier::verify_round_trip_batch<L: Lens>(lens: &L, atoms: &[Atom]) -> Result<(), LensError>
+```
+
+Use these in tests and CI to catch round-trip violations early.
+
+### Projected-surface contract
+
+Tracked as atom `blk_fdd6c9afb2a6_0`. The well-behaved-lens law applies **only to fields the lens projects** — non-projected fields are invariant under the lens by definition.
+
+Concrete example: the `MarkdownLens` projects `name` and `body` to Markdown frontmatter + body. It does **not** project `confidence` or `entrenchment` — those live in the atom envelope but are not surfaced in the Markdown view. Therefore:
+
+- ✅ Editing the projected body and pushing back produces a `Content` diff (in scope).
+- ✅ Editing the title produces a `Name` diff (in scope).
+- ❌ Editing confidence/entrenchment in the frontmatter is **not** diffed — it's outside the projected surface.
+
+A lens implementation that surfaces non-projected fields and tries to `put` them back violates the contract. Document the projected surface in the lens's doc comment.
+
+### First concrete impl: `MarkdownLens`
+
+Tracked as atom `blk_642d5ff86b7e_0`. Lives in the `ckl-lens-markdown` crate. Projects an atom into a Markdown document (frontmatter + body) and lifts edits back.
+
+```rust
+// Conceptual usage
+use ckl_lens_markdown::MarkdownLens;
+use ckl_lens::{Lens, LensVerifier};
+
+let lens = MarkdownLens::default();
+let md: String = lens.compile(&atom)?;
+// ... user edits md ...
+let diff: AtomDiff = lens.put(&atom, &edited_md)?;
+
+// Verify the law on a fresh round-trip
+LensVerifier::verify_round_trip(&lens, &atom)?;  // Ok(()) if well-behaved
+```
+
+### `AtomDiff` variants
+
+```rust
+#[non_exhaustive]
+pub enum AtomDiff {
+    NoOp,                                        // identity — round-trip success
+    Name { old: String, new: String },           // display-name change
+    Content { old: String, new: String },        // body/projected content change
+    Multi(Vec<AtomDiff>),                        // multiple field-level diffs at once
+}
+```
+
+`AtomDiff::is_identity()` recursively flattens `Multi`: a `Multi` whose inner diffs are all `NoOp` is treated as identity. Use `AtomDiff::identity()` (alias for `NoOp`) when you want to be explicit.
+
+**Foot-gun (atom `blk_6deeebb828e1_0`):** `AtomDiff::Multi(vec![])` is **vacuously identity** — `is_identity()` returns `true` because `parts.iter().all(...)` over an empty Vec is `true`. Don't rely on an empty `Multi` to mean "structural noop"; emit `AtomDiff::NoOp` (or an explicit no-op slot) when you mean "no change". Reviewers can't distinguish "I considered the change and found nothing" from "I forgot to compute the diff" if you ship `Multi(vec![])`.
+
+`#[non_exhaustive]` means downstream code must handle the `_ => …` arm — future variants (e.g. `Holder` change, structured `Frontmatter` patch) can be added without breaking the API.
 
 ## `ckl distill` (v0.5.0 — placeholder)
 
@@ -243,3 +351,6 @@ This skill is one of five `ckl` skills. Use it together with:
 7. **`--holder` on every capture (v0.5.0).** Without it the atom is recorded `unsigned` and audited as a severity-High weak decision. Set `$CKL_DEFAULT_HOLDER=agent-<name>` once per session as a safety net.
 8. **`AtomId::from_content` is deterministic.** `ckl distill` re-runs on the same block produce identical IDs — never duplicates. Free-form `AtomId` (when you mint one programmatically) is **not** automatically deduped against `from_content` IDs; prefer `from_content` unless you have a reason.
 9. `ckl distill` in v0.5.0 is a **placeholder** — it returns a single mirror atom + warning. Real LLM decomposition lands in a future minor. Scripts can adopt the flag now safely.
+10. **Lens stack is library-only in v0.5.5.** No `ckl lens` CLI subcommand yet — `ckl-lens` and `ckl-lens-markdown` ship trait + first impl for downstream Rust consumers. CLI-level projection / sync commands land in a later minor. The well-behaved-lens law (`put(atom, get(atom)) == identity`) is enforced in tests via `LensVerifier::verify_round_trip`.
+11. **`AtomDiff::Multi(vec![])` is vacuously identity** (atom `blk_6deeebb828e1_0`). `is_identity()` returns `true` because `all` over an empty Vec is `true`. Don't ship empty `Multi` to mean "structural noop" — emit `AtomDiff::NoOp` (or `AtomDiff::identity()`) explicitly so reviewers can tell "I considered the change" from "I forgot to compute the diff".
+12. **Projected-surface contract** (atom `blk_fdd6c9afb2a6_0`): the well-behaved-lens law applies *only* to fields the lens projects. Non-projected fields (e.g. `confidence`/`entrenchment` for `MarkdownLens`) are invariant under that lens by definition — they don't appear in `AtomDiff` even if the user "edits" them in the projected frontmatter.

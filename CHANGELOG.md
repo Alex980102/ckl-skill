@@ -5,6 +5,98 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.2] - 2026-05-05
+
+Sync release. Bumps every skill from `ckl >= 0.5.3` to `ckl >= 0.5.5`, picking
+up two new upstream ckl minor releases (v0.5.4 Blob Reverse Index, v0.5.5
+Lens Foundation). All five skills aligned to the same `metadata.version: 0.2.2`
+(including `ckl-search` which jumps 0.2.1 → 0.2.2). No breaking changes to
+skill structure — same five skills, same composition.
+
+### Added
+
+- **`ckl-knowledge`** (largest update — v0.5.5 Lens stack)
+  - **Atom-as-invariant pattern** (atom `blk_481254a21827_0`): atoms are
+    canonical; code, ADRs, tests, docs, Markdown are projections compiled
+    per audience. Lineage: Knuth Literate Programming → OMG DMN 2014 →
+    Lean Mathlib extraction → MDE.
+  - **Lens trait overview** (atom `blk_c0574a3ddc2e_0`): `Compiler` /
+    `Lens` traits in `ckl-lens`; Foster et al. 2007 well-behaved-lens law
+    `put(atom, get(atom)) == identity`; `LensVerifier::verify_round_trip`
+    and `verify_round_trip_batch`.
+  - **Projected-surface contract** (atom `blk_fdd6c9afb2a6_0`): the law
+    applies only to projected fields — non-projected fields (e.g.
+    confidence/entrenchment in Markdown frontmatter) are invariant under
+    the lens by definition and are not diffed.
+  - First concrete impl: **`MarkdownLens`** in `ckl-lens-markdown` (atom
+    `blk_642d5ff86b7e_0`).
+  - **`AtomDiff` variants section** (`NoOp` / `Name` / `Content` /
+    `Multi`) with identity-flatten semantics and `#[non_exhaustive]` note.
+  - Foot-gun: `AtomDiff::Multi(vec![])` is vacuously identity (atom
+    `blk_6deeebb828e1_0`) — emit explicit `NoOp` instead.
+  - `references/atom.md` extended with the AtomDiff section + cross-link
+    to the SKILL.md Lens overview.
+  - `description` and triggers extended with "Lens", "MarkdownLens",
+    "atom-as-invariant", "AtomDiff", "round-trip", "Foster lens".
+
+- **`ckl-search`** (v0.5.4 reverse-index updates)
+  - Blob mode table now shows complexity column (`O(log N + k)` for
+    default / `--info` / `--refs` post-v0.5.4).
+  - New `ckl blob reindex --pretty` example (one-shot back-fill on
+    upgrade from v0.5.3).
+  - Note that `ckl blob list` is paginated with sorted-hex order and
+    each item carries `refs_count`; pack-aware enumeration is a v0.5.4
+    follow-up still pending.
+  - **Testing/migration helper** section: `ckl manage block create
+    --blob-oid <hex>` (B3) — explicit `blob_oid` for end-to-end tests
+    of the reverse index. Cross-linked from `ckl-edit`.
+  - `references/blob.md` updated: complexity column, daemon-lock
+    section rewritten around the reverse-index speedup, new
+    `ckl blob reindex` subsection.
+
+- **`ckl-system`**
+  - "What's new" matrix extended with `v0.5.4` (Blob Reverse Index)
+    and `v0.5.5` (Lens Foundation).
+  - Gotcha 7 rewritten: post-v0.5.4 all `ckl blob` modes are
+    O(log N + k); only writes (capture/edit/`ckl blob reindex`) still
+    need `ckl daemon stop` for heavy jobs.
+  - New gotcha 9: one-shot `ckl blob reindex` after upgrade from v0.5.3.
+  - `references/migrations.md` — new section "v0.5.4 —
+    `blocks_by_blob_oid` reverse index back-fill" + new section "v0.5.5
+    — Lens crates (no migration)" stating no on-disk format changes.
+
+- **`ckl-edit`**
+  - New gotcha 6: `ckl manage block create --blob-oid` testing/migration
+    helper. Cross-link to `ckl-search` `references/blob.md` for the
+    daemon-lock matrix.
+
+### Changed
+
+- All five SKILL.md frontmatter `compatibility: Requires ckl binary >= 0.5.5`.
+- All five SKILL.md `metadata.version: 0.2.2` (including `ckl-search`,
+  which had been 0.2.1 — now aligned).
+- `skills/ckl-search/scripts/project-status.sh` requires `ckl >= 0.5.5`
+  (was `>= 0.4.9`).
+- `skills/ckl-system/scripts/reindex.sh` requires `ckl >= 0.5.5`
+  (was `>= 0.4.9`).
+- `template/SKILL.md` sample compatibility bumped to `ckl >= 0.5.5`.
+- `README.md`: prerequisites bumped to `ckl >= 0.5.5`; "What's new"
+  matrix extended with v0.5.4 and v0.5.5 rows.
+
+### Targets
+
+- `ckl` binary >= 0.5.5 on `$PATH`.
+
+### Notes
+
+- No breaking changes to skill structure (5 skills, same composition).
+- Lens stack ships as library-only in v0.5.5 (`ckl-lens`,
+  `ckl-lens-markdown` crates) — no `ckl lens` CLI subcommand. Future
+  minors may add CLI projection / sync commands.
+- v0.5.4 reverse-index requires a one-shot `ckl blob reindex --pretty`
+  after upgrading from v0.5.3 to populate the index for legacy blocks.
+  New writes maintain it inline.
+
 ## [0.2.1] - 2026-05-05
 
 Documentation hotfix for `ckl-search`. Adds guidance for the retrieval gap on
@@ -153,5 +245,7 @@ frontmatter (`name`, `description`, `license`, `compatibility`, `metadata`).
   are explicit (e.g. `ckl-search` → `ckl-edit` → `ckl-knowledge`).
 - Apache-2.0 license.
 
+[0.2.2]: https://github.com/koslab/ckl-skill/releases/tag/v0.2.2
+[0.2.1]: https://github.com/koslab/ckl-skill/releases/tag/v0.2.1
 [0.2.0]: https://github.com/koslab/ckl-skill/releases/tag/v0.2.0
 [0.1.0]: https://github.com/koslab/ckl-skill/releases/tag/v0.1.0

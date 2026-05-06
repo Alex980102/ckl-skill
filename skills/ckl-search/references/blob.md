@@ -8,6 +8,7 @@
 - [Subcommand vs OID positional](#subcommand-vs-oid-positional)
 - [Modes — default / `--raw` / `--info` / `--refs`](#modes--default---raw---info---refs)
 - [`ckl blob list`](#ckl-blob-list)
+- [`ckl blob reindex` (v0.5.4)](#ckl-blob-reindex-v054)
 - [Daemon-lock trade-off](#daemon-lock-trade-off)
 - [Examples](#examples)
 
@@ -47,13 +48,13 @@ ckl blob 4f3a8b... --info --pretty        # metadata only, no content
 ckl blob 4f3a8b... --refs --pretty        # reverse lookup
 ```
 
-| Flag | Output | Locks DB? |
-|---|---|---|
-| (none) | `{oid, size_bytes, content, encoding, refs_count, exists}`; `encoding` is `utf8` or `base64` | Yes (refs lookup) |
-| `--raw` | Raw bytes piped to stdout. **Skips refs lookup.** Binary-safe. | **No — fully lock-free** |
-| `--info` | `{oid, size_bytes, encoding, exists}` (no content, no refs) | Yes |
-| `--refs` | `{oid, refs: [{block_id, project_id, name, ...}]}` | Yes |
-| `--pretty` | Pretty JSON. Ignored with `--raw`. | — |
+| Flag | Output | Locks DB? | Complexity |
+|---|---|---|---|
+| (none) | `{oid, size_bytes, content, encoding, refs_count, exists}`; `encoding` is `utf8` or `base64` | Yes (brief — reverse-index lookup, post-v0.5.4) | O(log N + k) |
+| `--raw` | Raw bytes piped to stdout. **Skips refs lookup.** Binary-safe. | **No — fully lock-free** | O(1) |
+| `--info` | `{oid, size_bytes, encoding, exists}` (no content, no refs) | Yes (brief) | O(log N) |
+| `--refs` | `{oid, refs: [{block_id, project_id, name, ...}]}` | Yes (brief — reverse-index, post-v0.5.4) | O(log N + k) |
+| `--pretty` | Pretty JSON. Ignored with `--raw`. | — | — |
 
 **Defaults you should know:**
 
@@ -65,26 +66,44 @@ ckl blob 4f3a8b... --refs --pretty        # reverse lookup
 
 ```bash
 ckl blob list --pretty
+ckl blob list --limit 100 --offset 0 --pretty       # paginated (sorted-hex order, stable)
 ```
 
-Enumerates **loose objects only** — OIDs that live in `objects/<2-hex>/<rest>` directly. Packed objects (`objects/pack/*.pack`) are not iterated by this command.
+Enumerates **loose objects only** — OIDs that live in `objects/<2-hex>/<rest>` directly. Packed objects (`objects/pack/*.pack`) are not iterated by this command. **Pack-aware enumeration is a v0.5.4 follow-up** (still pending in v0.5.5 — track upstream for completion).
+
+Each item in the list now carries its `refs_count` (post-v0.5.4 reverse-index makes the per-item lookup O(log N + k)).
 
 To inspect packed objects, run `ckl migrate` / `ckl migrate-finalize` workflow first or use a gix-aware tool.
 
+## `ckl blob reindex` (v0.5.4)
+
+Rebuilds the `blocks_by_blob_oid` reverse index from `blocks::`. Idempotent (set semantics).
+
+```bash
+ckl blob reindex --pretty
+```
+
+- **Run once after upgrading from v0.5.3.** Pre-v0.5.4 writes did not emit the reverse index; until you back-fill, `ckl blob <oid> --refs` returns empty for those blocks.
+- New writes (capture/edit/write) emit the index inline regardless — you don't need to re-run after each session.
+- Safe to re-run if you suspect drift.
+
 ## Daemon-lock trade-off
 
-v0.5.3 has a subtle caveat: **only `ckl blob OID --raw` is fully lock-free.**
+**Pre-v0.5.4** every non-`--raw` mode scanned all blocks for the refs lookup. **v0.5.4** introduced the `blocks_by_blob_oid` reverse index, dropping all SurrealKV-touching modes to O(log N + k). The lock is still held briefly, but contention is now negligible.
 
-- Default / `--info` / `--refs` modes touch SurrealKV to do the refs lookup (or to verify the OID exists in the metadata table). They will block briefly when the daemon holds the lock.
-- `--raw` reads the gix object store directly via the gix crate — no SurrealKV access, no daemon contention.
+- `--raw` reads the gix object store directly via the gix crate — no SurrealKV access, no daemon contention. **Fully lock-free.**
+- Default / `--info` / `--refs` touch SurrealKV via the reverse index. They will block briefly when the daemon holds the write lock, but the index lookup is fast (O(log N + k) instead of O(N)).
+
+> **One-shot back-fill on upgrade from v0.5.3.** Pre-v0.5.4 `put_block` did not emit the reverse index, so blocks written before the upgrade are invisible to `--refs` until you run `ckl blob reindex --pretty` once. Idempotent (set semantics).
 
 Implication for scripts:
 
 | Pattern | Recommendation |
 |---|---|
-| One-off blob inspection | Default JSON envelope (with refs) — convenience wins |
-| Long-running pipeline reading N blobs | `--raw` — avoid contending with the daemon |
+| One-off blob inspection | Default JSON envelope (with refs) — convenience wins, now cheap |
+| Long-running pipeline reading N blobs | `--raw` — still the cheapest path (zero SurrealKV access) |
 | Verifying CAS integrity | `--raw \| sha1sum` and compare to OID |
+| Back-fill after upgrading from v0.5.3 | `ckl blob reindex --pretty` (idempotent, one-shot) |
 
 ## Examples
 

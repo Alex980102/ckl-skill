@@ -2,9 +2,9 @@
 name: ckl-system
 description: Use when the user wants to set up ckl, index a project for the first time, manage the daemon, configure auth/embeddings, watch for code or session changes, crawl documentation from URLs, or run storage migrations. This is the prerequisite skill for all other ckl skills — without `ckl index`, search/edit/knowledge/evolve do not work. Activate on mentions of "install ckl", "setup", "configure", "index project", "daemon", "MCP server", "crawl docs", "watch", "migrate", "reembed", "warm shards", "auth", or any ckl infrastructure / admin operation.
 license: Apache-2.0
-compatibility: Requires `ckl` binary >= 0.5.3 on $PATH. Some commands need write access to `~/.ckl/data/` and may require stopping the daemon first.
+compatibility: Requires `ckl` binary >= 0.5.5 on $PATH. Some commands need write access to `~/.ckl/data/` and may require stopping the daemon first.
 metadata:
-  version: 0.2.0
+  version: 0.2.2
   upstream: https://github.com/koslab/ckl
   composes-with: ckl-search, ckl-edit, ckl-knowledge, ckl-evolve
   prerequisite-for: all other ckl skills
@@ -19,7 +19,7 @@ Setup and administration for `ckl`. This is the **prerequisite skill** — witho
 
 ## What's new in ckl 0.5.x
 
-This skill targets **ckl 0.5.3** — covers four minor releases since v0.4.9:
+This skill targets **ckl 0.5.5** — covers six minor releases since v0.4.9:
 
 | Release | Surface |
 |---|---|
@@ -27,8 +27,10 @@ This skill targets **ckl 0.5.3** — covers four minor releases since v0.4.9:
 | `v0.5.1` Scoped Search II | scoped filters on `query` / `search` / `list` / `audit`, `ckl audit --persist-findings`, `--exclude-low` |
 | `v0.5.2` Agent-First Discovery | `ckl list all`, `--project-query` / `--org-query` / `--source-query` resolvers (substring → ID with 0/N error handling) |
 | `v0.5.3` Direct Blob Access | `ckl blob OID` (default / `--raw` / `--info` / `--refs`), `ckl blob list` |
+| `v0.5.4` Blob Reverse Index | `blocks_by_blob_oid` reverse index — all `ckl blob` modes drop to O(log N + k); `ckl blob reindex` one-shot back-fill; `ckl manage block create --blob-oid` testing/migration helper |
+| `v0.5.5` Lens Foundation | `ckl-lens` crate (`Compiler` / `Lens` traits + `AtomDiff` + `LensVerifier` round-trip law), `ckl-lens-markdown` first concrete impl. CLI surface unchanged — library-level addition only |
 
-Per-skill detail: `ckl-search` covers scoping + blobs; `ckl-knowledge` covers JTB+S + AtomKind + distill; `ckl-evolve` covers severity-graded weak decisions + `atom_coverage`.
+Per-skill detail: `ckl-search` covers scoping + blobs; `ckl-knowledge` covers JTB+S + AtomKind + distill + Lens overview; `ckl-evolve` covers severity-graded weak decisions + `atom_coverage`.
 
 ## Quick Reference
 
@@ -53,7 +55,7 @@ Deeper material: [references/setup.md](references/setup.md), [references/daemon.
 ## First-time setup
 
 ```bash
-# 1. Install (ckl >= 0.5.3 required for this skill suite)
+# 1. Install (ckl >= 0.5.5 required for this skill suite)
 cargo install --git https://github.com/koslab/ckl ckl-cli
 
 # 2. Onboarding wizard
@@ -190,5 +192,6 @@ Use `atoms.by_kind.claim` to gauge how much of the graph is JTB+S-enveloped know
 4. `ckl-config` tests are environment-dependent: `cargo test --workspace --exclude ckl-config` for clean CI.
 5. `ckl index` is idempotent — re-running on the same path updates only changed files.
 6. After raw text edits outside `ckl edit/write/apply`, run `ckl index <path>` so the graph reflects the new state.
-7. **Daemon-lock trade-off (v0.5.2 / v0.5.3).** Most read commands are lock-free, but a few need exclusive DB access while the daemon is down: `ckl list all` (v0.5.2 enriched join), `ckl blob` default / `--info` / `--refs` modes (v0.5.3 — they touch SurrealKV for refs lookup). **Only `ckl blob OID --raw` is fully lock-free** (reads `~/.ckl/blobs/` directly via gix). If you script blob reads in a long-running pipeline, pass `--raw` to avoid contending with the daemon.
+7. **Daemon-lock trade-off (v0.5.2 / v0.5.3 / v0.5.4).** Read commands are progressively lock-friendly: `ckl list all` (v0.5.2 enriched join) still scans, but post-v0.5.4 the new `blocks_by_blob_oid` reverse index makes **all** `ckl blob` modes (default / `--info` / `--refs`) O(log N + k) — no full-table scan, brief lock only. `ckl blob OID --raw` remains the *fully* lock-free path (reads `~/.ckl/blobs/` directly via gix, skips SurrealKV entirely). Only writes (capture / knowledge / edit / `ckl blob reindex`) still need `ckl daemon stop` for heavy jobs.
 8. **CAS store path (v0.5.3):** `~/.ckl/blobs/` is gix-backed. Don't manipulate it manually — use `ckl blob list` to enumerate and `ckl migrate-finalize` to GC.
+9. **One-shot reindex on upgrade from v0.5.3 (v0.5.4):** pre-v0.5.4 `put_block` did not emit the reverse index, so `ckl blob <oid> --refs` returns empty for blocks written before the upgrade until you back-fill. Run once: `ckl blob reindex --pretty`. Idempotent (set semantics) — safe to re-run.

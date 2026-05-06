@@ -9,7 +9,7 @@
 #   - Knowledge graph map (with quality signals)
 #   - Recent knowledge blocks
 #
-# Requires: ckl >= 0.4.9 on $PATH.
+# Requires: ckl >= 0.5.5 on $PATH.
 
 set -euo pipefail
 
