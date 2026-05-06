@@ -232,13 +232,14 @@ The negative test is critical — it confirms the helper is not vacuously accept
 
 ## TODO / future work
 
-- **M3 TypeScript lens** — `Target = swc_ecma_ast::Module` or similar. Candidate for v0.5.7. The trait surface and verifier helpers cover this with no foundation changes.
-- **`ckl ask --as <target>` CLI aspect** — a CLI surface that compiles an atom on demand for a chosen lens (`--as markdown` / `--as rust` / `--as ts`) and prints the projection. Candidate for v0.5.7. Until then, lenses are consumed only by Rust callers in-tree.
+- **`ckl ask --aspect projection --as <target>` CLI aspect — shipped in v0.5.7 (W2 δ)** for `markdown` (M1) and `rust` (M2). Lives in the `ckl-ask-projection` crate; respects the projected-surface contract verbatim. See [ask.md § Projection](ask.md#projection--projection---as-markdownrust).
+- **M3 TypeScript lens** — `Target = swc_ecma_ast::Module` or similar. Candidate for v0.5.8. The trait surface and verifier helpers cover this with no foundation changes; landing it adds one new variant to `ProjectionTargetArg` + one match arm in `ProjectionAspect`.
 - **Heterogeneous lens collections** — a `dyn ErasedLens` façade fixing `Target = String` would let registries iterate over an arbitrary set of lenses for round-trip CI sweeps. Not yet justified by demand.
 
 ## See also
 
 - [SKILL.md § Lens trait overview](../SKILL.md#lens-trait-overview-v055) — the entry-point summary in `ckl-knowledge`.
+- [ask.md § Projection](ask.md#projection--projection---as-markdownrust) — the v0.5.7 CLI aspect that wraps the Lens stack via FIPA-ACL REQUEST.
 - [atom.md § `AtomDiff`](atom.md#atomdiff--coarse-change-description-v055) — diff anatomy and identity-flatten semantics.
 - [atom.md § Atom anatomy](atom.md#atom-anatomy) — the canonical envelope a lens projects.
 - Atom IDs cross-referenced above: `blk_481254a21827_0` (atom-as-invariant pattern), `blk_c0574a3ddc2e_0` (Lens trait law), `blk_338f812e632c_0` (v0.5.5 L1 decision), `blk_642d5ff86b7e_0` (v0.5.5 M1 MarkdownLens), `blk_56b45ba60f45_0` (v0.5.6 M2 RustLens), `blk_6deeebb828e1_0` (Multi(vec![]) foot-gun), `blk_fdd6c9afb2a6_0` (projected-surface contract).

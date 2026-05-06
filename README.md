@@ -52,7 +52,7 @@ npx skills add koslab/ckl-skill/ckl-search
 
 ## Prerequisites
 
-- `ckl` binary >= **0.5.6** on `$PATH`. Install:
+- `ckl` binary >= **0.5.7** on `$PATH`. Install:
   ```bash
   cargo install --git https://github.com/koslab/ckl ckl-cli
   ```
@@ -60,7 +60,7 @@ npx skills add koslab/ckl-skill/ckl-search
 
 ### What's new in ckl 0.5.x (this skill release)
 
-This is `ckl-skill` v0.2.3, which targets ckl 0.5.6. The skills cover seven ckl minor releases since v0.4.9:
+This is `ckl-skill` v0.2.4, which targets ckl 0.5.7. The skills cover eight ckl minor releases since v0.4.9:
 
 | ckl release | Adds | Skill that documents it |
 |---|---|---|
@@ -71,6 +71,7 @@ This is `ckl-skill` v0.2.3, which targets ckl 0.5.6. The skills cover seven ckl 
 | `v0.5.4` Blob Reverse Index | `blocks_by_blob_oid` reverse index → all `ckl blob` modes O(log N + k); `ckl blob reindex` one-shot back-fill; `ckl manage block create --blob-oid` testing/migration helper | `ckl-search`, `ckl-system`, `ckl-edit` |
 | `v0.5.5` Lens Foundation | `ckl-lens` crate (`Compiler` / `Lens` traits, `AtomDiff`, `LensVerifier` round-trip law), `ckl-lens-markdown` first concrete impl (M1). CLI surface unchanged — library-level addition. Documents the atom-as-invariant pattern. | `ckl-knowledge`, `ckl-system` |
 | `v0.5.6` Lens Stack v2 + Distill Budget | `ckl-lens-rust` (M2 — `Target = syn::File`), cross-lens `LensVerifier::verify_projection_invariance` (V) + `ckl-lens-tests` integration crate, `ckl distill --budget-tokens N` (D1) with partial-result-on-budget semantics. New canonical reference: [`skills/ckl-knowledge/references/lens.md`](skills/ckl-knowledge/references/lens.md). | `ckl-knowledge` |
+| `v0.5.7` Knowledge-as-Conversation | `ckl ask <blk>` — third CKL working mode, FIPA-ACL Layer 4 surface. 11 aspects: identity envelope (`default`), Toulmin trio (`grounds`/`warrants`/`rebuttals`/`alternatives`/`conflicts`), lineage (`evolved`/`peers`/`used-by`/`depends-on`), and Lens-backed `projection --as <markdown\|rust>`. Pedagogical `argumentation_debt` nudge on claim-shaped blocks with no `GROUNDS`. Sub-crates: `ckl-ask` (foundation) + `ckl-ask-toulmin` + `ckl-ask-lineage` + `ckl-ask-projection`. New canonical reference: [`skills/ckl-knowledge/references/ask.md`](skills/ckl-knowledge/references/ask.md). | `ckl-knowledge` (cross-link from `ckl-search`) |
 
 ## Repository layout
 
@@ -98,7 +99,7 @@ ckl-skill/
 │   ├── ckl-knowledge/
 │   │   ├── SKILL.md
 │   │   ├── icon.svg
-│   │   └── references/           # cip, knowledge-types, distillation-rules, argument-relations, atom (v0.5.0)
+│   │   └── references/           # cip, knowledge-types, distillation-rules, argument-relations, atom (v0.5.0), lens (v0.5.5/0.5.6), ask (v0.5.7)
 │   └── ckl-evolve/
 │       ├── SKILL.md
 │       ├── icon.svg

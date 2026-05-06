@@ -1,14 +1,14 @@
 ---
 name: ckl-knowledge
-description: Use when the user wants to capture decisions/patterns/gotchas/lessons via the Capture/Intent Protocol (CIP) with the v0.5.0 JTB+S envelope (holder/kind/container), distill a block into pure-knowledge atoms (Curry-Howard tri-decomposition Code/Claim/Proof), create typed argument edges (Toulmin model — SUPPORTS, GROUNDS, WARRANT, REBUTTAL), compile a structured episode into atoms, or back up/restore the knowledge graph (export/import). Also covers the v0.5.5 atom-as-invariant pattern and the Lens / MarkdownLens bidirectional projection stack (Foster et al. 2007 well-behaved-lens law, AtomDiff, LensVerifier). AGM-grounded belief revision semantics map directly to capture/promote/resolve/archive/deprecate intents. Activate on mentions of "capture", "decision", "pattern", "gotcha", "lesson", "rationale", "why we", "argument", "evidence", "Toulmin", "AGM", "supersede", "JTB+S", "Atom", "AtomKind", "Curry-Howard", "distill", "holder", "container", "export knowledge", "Lens", "MarkdownLens", "atom-as-invariant", "AtomDiff", "round-trip", "Foster lens", or any knowledge-graph mutation.
+description: Use when the user wants to capture decisions/patterns/gotchas/lessons via the Capture/Intent Protocol (CIP) with the v0.5.0 JTB+S envelope (holder/kind/container), distill a block into pure-knowledge atoms (Curry-Howard tri-decomposition Code/Claim/Proof), create typed argument edges (Toulmin model — SUPPORTS, GROUNDS, WARRANT, REBUTTAL), ask the graph about a block via the v0.5.7 conversational verb `ckl ask` (FIPA-ACL Layer 4 speech-act surface — identity envelope, Toulmin trio, lineage, lens projection), compile a structured episode into atoms, or back up/restore the knowledge graph (export/import). Also covers the v0.5.5 atom-as-invariant pattern and the Lens / MarkdownLens / RustLens bidirectional projection stack (Foster et al. 2007 well-behaved-lens law, AtomDiff, LensVerifier). AGM-grounded belief revision semantics map directly to capture/promote/resolve/archive/deprecate intents. Activate on mentions of "capture", "decision", "pattern", "gotcha", "lesson", "rationale", "why we", "argument", "evidence", "Toulmin", "AGM", "supersede", "JTB+S", "Atom", "AtomKind", "Curry-Howard", "distill", "holder", "container", "ckl ask", "ask the graph", "FIPA-ACL", "speech act", "identity envelope", "argumentation_debt", "argumentation_summary", "grounds", "warrants", "rebuttals", "alternatives", "evolved", "peers", "used-by", "depends-on", "projection", "export knowledge", "Lens", "MarkdownLens", "atom-as-invariant", "AtomDiff", "round-trip", "Foster lens", or any knowledge-graph mutation.
 license: Apache-2.0
-compatibility: Requires `ckl` binary >= 0.5.6 on $PATH, an entity created via `ckl seed` (see ckl-evolve), and a project indexed (see ckl-system).
+compatibility: Requires `ckl` binary >= 0.5.7 on $PATH, an entity created via `ckl seed` (see ckl-evolve), and a project indexed (see ckl-system).
 metadata:
-  version: 0.2.3
+  version: 0.2.4
   upstream: https://github.com/koslab/ckl
   composes-with: ckl-evolve, ckl-search
   prerequisite: ckl-system, ckl-evolve
-  primary-commands: capture, distill, observe, promote, resolve, archive, deprecate, do, knowledge, relate, compile, compile-relations, delete, export, import
+  primary-commands: capture, ask, distill, observe, promote, resolve, archive, deprecate, do, knowledge, relate, compile, compile-relations, delete, export, import
 ---
 
 # CKL Knowledge
@@ -21,6 +21,7 @@ Mutate the knowledge graph: capture atoms via CIP, link them with typed argument
 
 | Command | Purpose |
 |---|---|
+| `ckl ask <blk> [--aspect <kind>] [--as <markdown\|rust>]` | v0.5.7: conversational identity envelope + 10 typed aspects (FIPA-ACL Layer 4 surface) — see [Conversational layer](#conversational-layer--ckl-ask) |
 | `ckl capture --title --content --type --entity --cycle` | CIP: dedup + auto-relate + optional post-cycle (preferred) |
 | `ckl capture ... --holder --kind --container` | v0.5.0: attach JTB+S envelope (signer + AtomKind + container block) |
 | `ckl distill --block blk_xxx [--max-atoms N]` | v0.5.0: decompose a block into pure-knowledge atoms (idempotent via `AtomId::from_content`). Currently a placeholder mirror; v0.5.x+ plugs in LLM decomposition. |
@@ -38,7 +39,78 @@ Mutate the knowledge graph: capture atoms via CIP, link them with typed argument
 | `ckl export --output backup.json` | Dump graph to JSON |
 | `ckl import --input backup.json` | Restore from JSON |
 
-Deeper material: [references/atom.md](references/atom.md) (v0.5.0 Atom + JTB+S anatomy + v0.5.5 AtomDiff), [references/cip.md](references/cip.md), [references/knowledge-types.md](references/knowledge-types.md), [references/distillation-rules.md](references/distillation-rules.md), [references/argument-relations.md](references/argument-relations.md).
+Deeper material: [references/ask.md](references/ask.md) (v0.5.7 conversational layer + 11 aspects + FIPA-ACL framing), [references/atom.md](references/atom.md) (v0.5.0 Atom + JTB+S anatomy + v0.5.5 AtomDiff), [references/lens.md](references/lens.md) (v0.5.5 / v0.5.6 Lens stack — invoked by `ckl ask --aspect projection`), [references/cip.md](references/cip.md), [references/knowledge-types.md](references/knowledge-types.md), [references/distillation-rules.md](references/distillation-rules.md), [references/argument-relations.md](references/argument-relations.md).
+
+## Conversational layer — `ckl ask`
+
+`ckl ask <blk>` is the v0.5.7 entry point for **knowledge-as-conversation**: instead of re-deriving a block's identity from a search query each call, the agent *asks* the substrate and gets back a structured envelope. Read-only by construction; never mutates the graph.
+
+### FIPA-ACL Layer 4 framing
+
+Tracked as atom `blk_8edc98757909_0`. The ask layer maps to FIPA-ACL speech acts: every aspect is a typed *query-ref* / *query-if* / *request* against the substrate, and the response is the substrate's *inform* reply. This is the third CKL working mode (atom `blk_11d2d0442289_0`), composed alongside *capture* (mutate) and *search* (discover):
+
+| Mode | Primary verb | Speech act | Direction |
+|---|---|---|---|
+| Search | `ckl query` / `ckl search` | INFORM-REF | substrate → agent (broad discovery) |
+| Capture | `ckl capture` / `ckl edit` / `ckl write` | INFORM | agent → substrate (mutate) |
+| **Ask** | `ckl ask <blk>` | **QUERY-REF / QUERY-IF / REQUEST** | agent → substrate → agent (structured introspection on a known block) |
+
+The ask layer presupposes you already have a block id. Use `ckl search` / `ckl query` to find one first.
+
+### 11 aspects — the speech-act registry
+
+| Aspect | FIPA Speech Act | Returns |
+|---|---|---|
+| `default` (omit `--aspect`) | QUERY-REF | Identity envelope: `id`, `name`, `type`, `role` (root / hub / chain / leaf / orphan), `atom` (kind/holder/container/layer when persisted), `kronos` layer + last cycle, `edges` by category (structural / argumentation / semantic / temporal — explicit `{}` when empty), `argumentation_summary` (populated for claim atoms once W3 ε lands), `neighbors_top_3`, `size_hint`, optional `argumentation_debt` nudge |
+| `--aspect grounds` | QUERY-IF | `supports` (incoming `SUPPORTS`) + `grounds` (incoming `GROUNDS`) edge rows |
+| `--aspect warrants` | QUERY-IF | `inbound` + `outbound` `WARRANT` edges |
+| `--aspect rebuttals` | QUERY-IF | `direct` (incoming `REBUTTAL`) + `contradictions` (incoming `CONTRADICTS` already in graph) |
+| `--aspect alternatives` | QUERY-REF | `rejected` (inbound `ALTERNATIVE_TO`) + `winners` (outbound `ALTERNATIVE_TO`) |
+| `--aspect conflicts` | QUERY-IF | `opposed_by` (incoming `OPPOSES`) + `contradictions` (incoming `CONTRADICTS`) |
+| `--aspect evolved` | QUERY-REF | Block history snapshots (newest-first, top-10) + `derived_from` (`Replaces` / `Supersedes` edges as Kronos `DERIVED_FROM` proxy) |
+| `--aspect peers` | QUERY-REF | Top-5 `SeeAlso` neighbours sorted by edge weight |
+| `--aspect used-by` | QUERY-REF | Incoming structural consumers: `DependsOn` / `Imports` / `Calls` / `Extends` / `Implements` |
+| `--aspect depends-on` | QUERY-REF | Outgoing edges of the same structural set |
+| `--aspect projection --as <markdown\|rust>` | REQUEST | Lens-rendered projection of the first persisted atom in the block's container slot — markdown (M1 `MarkdownLens`) or Rust (M2 `RustLens`). Inherits the projected-surface contract from [`references/lens.md`](references/lens.md) |
+
+Detection of semantic contradictions (negation heuristics, word overlap) deliberately stays out of `--aspect rebuttals` / `--aspect conflicts` — `ckl audit --pretty` (in `ckl-evolve`) remains the place for that.
+
+### Pedagogical loop — `argumentation_debt`
+
+The default identity envelope inspects claim-shaped blocks (Decision / Lesson / etc.) and emits a top-level `argumentation_debt` note when the block has zero `GROUNDS` edges:
+
+```text
+"argumentation_debt": "no GROUNDS edges — consider `ckl relate <fact-id> blk_xxx --kind GROUNDS`"
+```
+
+This closes the `ckl audit` `weak_decisions` loop with a per-call nudge: `audit` reports the gap project-wide, but `ckl ask` surfaces it the moment an agent inspects a single block, before the agent commits to a downstream action. Fill the debt with `ckl relate` (Toulmin edges — see [references/argument-relations.md](references/argument-relations.md)). The pedagogical loop is grounded in the Toulmin workflow atom `blk_8c68386ad6f9_0`.
+
+`argumentation_summary` is populated for atoms with non-trivial argument structure (post-W3 ε); pre-ε it serializes as `null`. Either way it is **always present** in the envelope — empty `{}` / `null` / `[]` slots are explicit by foundation contract (carries the v0.5.5 `Multi(vec![])` lesson — empty must be visible, not omitted).
+
+### Worked example — drill into a v0.5.7 atom
+
+```bash
+# 1. Find candidate blocks (search beats ask for fuzzy lookup)
+ckl search "v0.5.7 FIPA" --format compact
+
+# 2. Open the identity envelope on a hit
+ckl ask blk_8edc98757909_0 --pretty
+
+# 3. Pull the Toulmin grounds backing the claim
+ckl ask blk_8edc98757909_0 --aspect grounds --pretty
+
+# 4. Render the persisted atom as Markdown (M1 lens)
+ckl ask blk_8edc98757909_0 --aspect projection --as markdown --pretty
+```
+
+### Anti-patterns
+
+- ❌ **Don't read content via `ckl ask`.** The identity envelope only *hints* at size (`size_hint.tokens` / `lines`) — it never inlines body. Use `ckl block <id>` or `ckl query --source` when you need the raw text.
+- ❌ **Don't use `ckl ask` in pipelines that need raw text.** Pipe-friendly contracts live in `ckl block` / `ckl blob --raw`. `ckl ask` returns a structured *envelope* designed for an agent's reasoning loop, not for `awk`/`jq`-style projection.
+- ❌ **Don't pre-filter with `ckl ask`.** Use `ckl query` / `ckl search` to *find* a block, then `ckl ask` to *understand* it. `ckl ask` requires a known id and is O(1)-per-aspect; the search layer handles the fuzzy join.
+- ❌ **Don't `ckl ask --aspect projection` without a captured atom.** The aspect picks the first persisted atom in the block's container slot; if no atom has been captured yet, the call surfaces a runtime error pointing to `ckl capture --container <blk>`.
+
+Full per-aspect reference (input/output JSON shape, sub-crate decomposition, `AskContext` params, `AspectKindArg` variant ordering, `ckl ask` vs `ckl block` / `ckl context` / `ckl usages` decision table, future `ckl tell`): **[references/ask.md](references/ask.md)**.
 
 ## Capture (default path: CIP)
 

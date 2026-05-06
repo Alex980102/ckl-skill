@@ -2,9 +2,9 @@
 name: ckl-system
 description: Use when the user wants to set up ckl, index a project for the first time, manage the daemon, configure auth/embeddings, watch for code or session changes, crawl documentation from URLs, or run storage migrations. This is the prerequisite skill for all other ckl skills — without `ckl index`, search/edit/knowledge/evolve do not work. Activate on mentions of "install ckl", "setup", "configure", "index project", "daemon", "MCP server", "crawl docs", "watch", "migrate", "reembed", "warm shards", "auth", or any ckl infrastructure / admin operation.
 license: Apache-2.0
-compatibility: Requires `ckl` binary >= 0.5.6 on $PATH. Some commands need write access to `~/.ckl/data/` and may require stopping the daemon first.
+compatibility: Requires `ckl` binary >= 0.5.7 on $PATH. Some commands need write access to `~/.ckl/data/` and may require stopping the daemon first.
 metadata:
-  version: 0.2.3
+  version: 0.2.4
   upstream: https://github.com/koslab/ckl
   composes-with: ckl-search, ckl-edit, ckl-knowledge, ckl-evolve
   prerequisite-for: all other ckl skills

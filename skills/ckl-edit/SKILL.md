@@ -2,9 +2,9 @@
 name: ckl-edit
 description: Use when the user wants to modify code with provenance — edit existing files, write new files, rename, batch-refactor with rollback, or group ops into one auditable session. All edits emit Edit nutrients and auto-relate to the knowledge graph. Activate on mentions of "edit", "refactor", "rename", "create file", "fix", "change", "modify", "apply patch", "batch edit", or any file modification request in indexed projects.
 license: Apache-2.0
-compatibility: Requires `ckl` binary >= 0.5.6 on $PATH and a project indexed with `ckl index` (see ckl-system skill).
+compatibility: Requires `ckl` binary >= 0.5.7 on $PATH and a project indexed with `ckl index` (see ckl-system skill).
 metadata:
-  version: 0.2.3
+  version: 0.2.4
   upstream: https://github.com/koslab/ckl
   composes-with: ckl-search, ckl-knowledge
   prerequisite: ckl-system

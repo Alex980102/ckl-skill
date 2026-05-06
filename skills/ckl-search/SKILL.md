@@ -2,9 +2,9 @@
 name: ckl-search
 description: Use when the user wants to find code, navigate the knowledge graph, get a project overview, scope searches by org/project/source/holder/kind/container, do cross-entity discovery (orgs+projects+sources+documents in one shot), resolve names to IDs by substring (--project-query / --org-query / --source-query), read content-addressed blobs by OID, or explore relationships between blocks. Hybrid search (BM25 + semantic + graph) replaces Grep/Glob in projects indexed with ckl. Activate on mentions of "find", "search", "where is", "what calls", "what references", "show me", "navigate", "trace", "lookup", "list all", "by holder", "by kind", "blob", "OID", "scoped search", or specific code/concept names in indexed projects.
 license: Apache-2.0
-compatibility: Requires `ckl` binary >= 0.5.6 on $PATH and a project indexed with `ckl index` (see ckl-system skill).
+compatibility: Requires `ckl` binary >= 0.5.7 on $PATH and a project indexed with `ckl index` (see ckl-system skill).
 metadata:
-  version: 0.2.3
+  version: 0.2.4
   upstream: https://github.com/koslab/ckl
   composes-with: ckl-edit, ckl-knowledge
   prerequisite: ckl-system
@@ -289,6 +289,8 @@ If `--info` returns `exists: false`, the loose object was packed or GC'd — re-
 | Inspect what references an OID | `ckl blob <oid> --refs` | v0.5.3 reverse lookup |
 
 **Do NOT use** `Grep`/`Glob` when the project is indexed — `ckl query`/`search` is faster and returns richer context.
+
+> **See also (v0.5.7):** once you have a block id from `ckl query` / `ckl search`, switch to the conversational layer — `ckl ask <blk>` (see [ckl-knowledge SKILL.md § Conversational layer](../ckl-knowledge/SKILL.md#conversational-layer--ckl-ask)) returns a structured identity envelope plus 10 typed aspects (Toulmin grounds/warrants/rebuttals, lineage, lens projection). Search to *find*, ask to *understand*.
 
 ## Composes with
 
