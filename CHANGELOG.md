@@ -5,6 +5,83 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.3] - 2026-05-05
+
+Sync release. Bumps every skill from `ckl >= 0.5.5` to `ckl >= 0.5.6`, picking
+up upstream ckl 0.5.6 (M2 RustLens, projection-invariance verifier, `ckl
+distill --budget-tokens`). Headlined by a new canonical reference doc for the
+Lens stack. All five skills aligned to the same `metadata.version: 0.2.3`. No
+breaking changes to skill structure — same five skills, same composition.
+
+### Added
+
+- **`ckl-knowledge`** (largest update — Lens reference doc + `--budget-tokens`)
+  - **NEW canonical reference** [`references/lens.md`](skills/ckl-knowledge/references/lens.md):
+    - `Compiler` / `Lens` trait surface, `Compiler::Target` associated type
+      and the deliberate non-object-safety choice.
+    - Foster et al. 2007 well-behaved-lens law, restated for the v0.5.6
+      surface.
+    - `LensVerifier::verify_round_trip` + `verify_round_trip_batch`
+      (v0.5.5 L1 + L2) and the new
+      `LensVerifier::verify_projection_invariance` (v0.5.6 V) — generic
+      helper with a polymorphic `FnOnce(&mut L::Target)` mutator.
+    - `AtomDiff` variants + identity-flatten semantics + the
+      `Multi(vec![])` foot-gun (atom `blk_6deeebb828e1_0`).
+    - **Projected-surface contract** (atom `blk_fdd6c9afb2a6_0`) — 1–2
+      paragraph explanation grounded in slice-extract `put` impls.
+    - In-tree crates table:
+      `ckl-lens` (foundation, v0.5.5), `ckl-lens-markdown` (M1, v0.5.5),
+      `ckl-lens-rust` (M2, v0.5.6), `ckl-lens-tests` (V, v0.5.6).
+    - Concrete code example: a `OneLineLens` impl with the `Multi([slot])`
+      pattern.
+    - Property-test pattern: positive + negative
+      `verify_projection_invariance` cases, cross-linked to
+      `crates/ckl-lens-tests/tests/projection_invariance.rs`.
+    - Anti-patterns (vacuous `Multi(vec![])`, parsing non-projected
+      fields, non-`#[non_exhaustive]` matches, `dyn Lens`, missing
+      negative tests) and a `// TODO` block for M3 TypeScript +
+      `ckl ask --as <target>` (v0.5.7 candidates).
+  - **`ckl distill --budget-tokens N` (v0.5.6 D1):** new optional cap on
+    LLM token spend. Default unlimited. On budget reached → returns
+    partial result + warning, never a hard error. Validation rejects
+    `0..99` (must be `>= 100`). Driven by an `LlmTokenBudget` runtime
+    type, separate from `ckl_search`'s `TokenBudget`.
+  - "Lens trait overview" section now cross-links to the new
+    `references/lens.md` and labels v0.5.5 / v0.5.6 inline.
+
+- **Top-level**
+  - README "What's new" matrix extended with a `v0.5.6` row covering the
+    M2 RustLens, the V projection-invariance verifier, the new
+    `ckl-lens-tests` cross-lens crate, and the `ckl distill
+    --budget-tokens` flag — with an inline pointer to the new lens.md.
+
+### Changed
+
+- All five SKILL.md frontmatter `compatibility: Requires ckl binary >= 0.5.6`.
+- All five SKILL.md `metadata.version: 0.2.3`.
+- `skills/ckl-search/scripts/project-status.sh` requires `ckl >= 0.5.6`
+  (was `>= 0.5.5`).
+- `skills/ckl-system/scripts/reindex.sh` requires `ckl >= 0.5.6`
+  (was `>= 0.5.5`).
+- `template/SKILL.md` sample compatibility bumped to `ckl >= 0.5.6`.
+- `README.md`: prerequisites bumped to `ckl >= 0.5.6`; "What's new"
+  matrix extended with a v0.5.6 row.
+- `ckl-search` Gotcha #6 carries an inline note that the v0.5.4
+  `blocks_by_blob_oid` reverse index has matured into v0.5.6 with no
+  behaviour change — `ckl blob reindex --pretty` remains the only
+  one-shot post-upgrade step from v0.5.3.
+
+### Targets
+
+- `ckl` binary >= 0.5.6 on `$PATH`.
+
+### Notes
+
+- No breaking changes to skill structure (5 skills, same composition).
+- Lens stack remains library-only as of v0.5.6 — no `ckl lens` CLI
+  subcommand. M3 TypeScript lens and `ckl ask --as <target>` are v0.5.7
+  candidates.
+
 ## [0.2.2] - 2026-05-05
 
 Sync release. Bumps every skill from `ckl >= 0.5.3` to `ckl >= 0.5.5`, picking
@@ -245,6 +322,7 @@ frontmatter (`name`, `description`, `license`, `compatibility`, `metadata`).
   are explicit (e.g. `ckl-search` → `ckl-edit` → `ckl-knowledge`).
 - Apache-2.0 license.
 
+[0.2.3]: https://github.com/koslab/ckl-skill/releases/tag/v0.2.3
 [0.2.2]: https://github.com/koslab/ckl-skill/releases/tag/v0.2.2
 [0.2.1]: https://github.com/koslab/ckl-skill/releases/tag/v0.2.1
 [0.2.0]: https://github.com/koslab/ckl-skill/releases/tag/v0.2.0
