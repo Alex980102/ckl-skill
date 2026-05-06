@@ -2,9 +2,9 @@
 name: ckl-search
 description: Use when the user wants to find code, navigate the knowledge graph, get a project overview, scope searches by org/project/source/holder/kind/container, do cross-entity discovery (orgs+projects+sources+documents in one shot), resolve names to IDs by substring (--project-query / --org-query / --source-query), read content-addressed blobs by OID, or explore relationships between blocks. Hybrid search (BM25 + semantic + graph) replaces Grep/Glob in projects indexed with ckl. Activate on mentions of "find", "search", "where is", "what calls", "what references", "show me", "navigate", "trace", "lookup", "list all", "by holder", "by kind", "blob", "OID", "scoped search", or specific code/concept names in indexed projects.
 license: Apache-2.0
-compatibility: Requires `ckl` binary >= 0.5.5 on $PATH and a project indexed with `ckl index` (see ckl-system skill).
+compatibility: Requires `ckl` binary >= 0.5.6 on $PATH and a project indexed with `ckl index` (see ckl-system skill).
 metadata:
-  version: 0.2.2
+  version: 0.2.3
   upstream: https://github.com/koslab/ckl
   composes-with: ckl-edit, ckl-knowledge
   prerequisite: ckl-system
@@ -314,7 +314,7 @@ Falls back to `scripts/project-status.sh` for agents that don't expand `${CLAUDE
 3. `--enriched` is heavier (~4× tokens vs `--format compact`) — start with compact, drill with enriched.
 4. Vector index lives in `~/.ckl/data/vectors/<project>.usearch` per project, plus `_orphan.usearch` for blocks without a project.
 5. **`--*-query` resolvers (v0.5.2) require exactly one match.** 0 matches → error; 2+ → error with candidate list. Use `--project <id>` (literal) when ambiguous. The flags are mutually exclusive with their `--project` / `--org` / `--source-id` counterparts.
-6. **Daemon-lock trade-off (v0.5.2 / v0.5.3 / v0.5.4).** `ckl list all` (v0.5.2 enriched join) still scans cross-target. **Post-v0.5.4 all `ckl blob` modes (default / `--info` / `--refs`) are O(log N + k)** — no full-table scan, brief lock only — thanks to the `blocks_by_blob_oid` reverse index. `ckl blob OID --raw` remains the *fully* lock-free path (skips SurrealKV entirely). For long pipelines, `--raw` is still cheapest; for quick metadata + refs, the default envelope is now cheap enough to use freely. After upgrading from v0.5.3, run `ckl blob reindex --pretty` once — pre-v0.5.4 writes don't appear in the reverse index until back-filled.
+6. **Daemon-lock trade-off (v0.5.2 / v0.5.3 / v0.5.4).** `ckl list all` (v0.5.2 enriched join) still scans cross-target. **Post-v0.5.4 all `ckl blob` modes (default / `--info` / `--refs`) are O(log N + k)** — no full-table scan, brief lock only — thanks to the `blocks_by_blob_oid` reverse index. `ckl blob OID --raw` remains the *fully* lock-free path (skips SurrealKV entirely). For long pipelines, `--raw` is still cheapest; for quick metadata + refs, the default envelope is now cheap enough to use freely. After upgrading from v0.5.3, run `ckl blob reindex --pretty` once — pre-v0.5.4 writes don't appear in the reverse index until back-filled. *(v0.5.6 note: no behaviour change vs v0.5.4 — the reverse index has settled into its mature shape; `ckl blob reindex` remains the only one-shot post-upgrade step from v0.5.3.)*
 7. **`ckl blob OID` requires the full 40-char SHA-1.** Short prefixes are not currently expanded.
 8. `--kind` accepts only `code`, `claim`, `proof` (v0.5.0 AtomKind). Other strings error out.
 9. **Short structured-ID queries hit a retrieval gap in `ckl query`.** Hybrid scoring is dominated by vector similarity; literal IDs like `B4`, `M1`, `S2`, `v0.5.4` get drowned by generic words ("backlog", "fix"). Fall back to `ckl search "<id>" --format compact` (BM25-leaning) — see [references/query-flags.md § When `ckl search` beats `ckl query`](references/query-flags.md#when-ckl-search-beats-ckl-query). Tracked as atom `blk_2307b35fa77f_0`.

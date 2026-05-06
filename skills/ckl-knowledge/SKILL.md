@@ -2,9 +2,9 @@
 name: ckl-knowledge
 description: Use when the user wants to capture decisions/patterns/gotchas/lessons via the Capture/Intent Protocol (CIP) with the v0.5.0 JTB+S envelope (holder/kind/container), distill a block into pure-knowledge atoms (Curry-Howard tri-decomposition Code/Claim/Proof), create typed argument edges (Toulmin model — SUPPORTS, GROUNDS, WARRANT, REBUTTAL), compile a structured episode into atoms, or back up/restore the knowledge graph (export/import). Also covers the v0.5.5 atom-as-invariant pattern and the Lens / MarkdownLens bidirectional projection stack (Foster et al. 2007 well-behaved-lens law, AtomDiff, LensVerifier). AGM-grounded belief revision semantics map directly to capture/promote/resolve/archive/deprecate intents. Activate on mentions of "capture", "decision", "pattern", "gotcha", "lesson", "rationale", "why we", "argument", "evidence", "Toulmin", "AGM", "supersede", "JTB+S", "Atom", "AtomKind", "Curry-Howard", "distill", "holder", "container", "export knowledge", "Lens", "MarkdownLens", "atom-as-invariant", "AtomDiff", "round-trip", "Foster lens", or any knowledge-graph mutation.
 license: Apache-2.0
-compatibility: Requires `ckl` binary >= 0.5.5 on $PATH, an entity created via `ckl seed` (see ckl-evolve), and a project indexed (see ckl-system).
+compatibility: Requires `ckl` binary >= 0.5.6 on $PATH, an entity created via `ckl seed` (see ckl-evolve), and a project indexed (see ckl-system).
 metadata:
-  version: 0.2.2
+  version: 0.2.3
   upstream: https://github.com/koslab/ckl
   composes-with: ckl-evolve, ckl-search
   prerequisite: ckl-system, ckl-evolve
@@ -125,9 +125,11 @@ The atom is the **source of truth**. A projection is a *view*: when a user edits
 
 CKL's contribution is to anchor the invariant in JTB+S-signed atoms and to enforce the law via `LensVerifier::verify_round_trip`.
 
-## Lens trait overview (v0.5.5)
+## Lens trait overview (v0.5.5 / v0.5.6)
 
-Tracked as atom `blk_c0574a3ddc2e_0`. Foundation lives in the `ckl-lens` crate. **No CLI surface yet** — the v0.5.5 release is a library-level addition. Custom downstream tooling (in-app editors, sync agents) implements these traits.
+Tracked as atom `blk_c0574a3ddc2e_0`. Foundation lives in the `ckl-lens` crate. **No CLI surface yet** — v0.5.5 (L1 + M1 MarkdownLens) and v0.5.6 (M2 RustLens + cross-lens projection-invariance properties) are library-level additions. Custom downstream tooling (in-app editors, sync agents) implements these traits.
+
+Full surface — Compiler/Lens trait surface, projected-surface contract, in-tree crates table (`ckl-lens` / `ckl-lens-markdown` / `ckl-lens-rust` / `ckl-lens-tests`), worked custom-lens example, property-test patterns, and anti-patterns: **[references/lens.md](references/lens.md)**.
 
 ```rust
 // ckl-lens/src/lens.rs
@@ -209,11 +211,12 @@ pub enum AtomDiff {
 
 `#[non_exhaustive]` means downstream code must handle the `_ => …` arm — future variants (e.g. `Holder` change, structured `Frontmatter` patch) can be added without breaking the API.
 
-## `ckl distill` (v0.5.0 — placeholder)
+## `ckl distill` (v0.5.0 — placeholder, v0.5.6 budget-aware)
 
 ```bash
 ckl distill --block blk_xxx --pretty
 ckl distill --block blk_xxx --max-atoms 5 --pretty
+ckl distill --block blk_xxx --budget-tokens 4000 --pretty   # v0.5.6 (D1)
 ```
 
 `ckl distill` decomposes a single block into 1..N pure-knowledge atoms. **Idempotent** — `AtomId` is computed via `AtomId::from_content` (deterministic SHA over `kind|holder|content`), so re-running on the same block produces identical IDs and never duplicates.
@@ -222,7 +225,18 @@ ckl distill --block blk_xxx --max-atoms 5 --pretty
 |---|---|
 | `--block <blk_xxx>` | Source block (required) |
 | `--max-atoms N` | Hint for the LLM decomposer (default 3) |
+| `--budget-tokens N` | **v0.5.6 (D1):** cap LLM token spend at `N` (>= 100). Default unlimited. On budget reached → returns the partial result + warning, never a hard error. |
 | `--pretty` | Human-readable JSON |
+
+### `--budget-tokens` (v0.5.6, D1)
+
+Optional cap on the per-call LLM token spend driven by an `LlmTokenBudget` runtime type (separate from `ckl_search`'s `TokenBudget` — different surface, different consumer). Behaviour:
+
+- **Default:** unlimited (no flag).
+- **`>= 100`:** budget is enforced. When reached the call returns whatever atoms it has produced so far plus a warning string in the JSON envelope. Never a hard error — partial output is the success path.
+- **`0..99`:** **rejected** at validation (exit code 1, `{error, code, hint}`). The lower bound exists because anything tighter is below the floor any real distillation prompt + reply needs.
+
+Use this in batch / CI distillation jobs where a runaway prompt could otherwise drain a key. Pair with `--max-atoms` to bound both the *count* and the *cost* of a single call.
 
 **v0.5.0 status:** placeholder. Returns a single mirror atom (the input block, copied as a `claim`) plus a warning. v0.5.x+ plugs in real LLM-driven 1:N decomposition. Use it now to pre-allocate the workflow — when the real decomposer ships your scripts will benefit automatically.
 
