@@ -8,6 +8,7 @@
 - [Atom anatomy](#atom-anatomy)
 - [JTB+S — holder, kind, container](#jtbs--holder-kind-container)
 - [AtomKind — Curry-Howard tri-decomposition](#atomkind--curry-howard-tri-decomposition)
+- [`AtomDiff` — coarse change description (v0.5.5)](#atomdiff--coarse-change-description-v055)
 - [AtomId — `free_form` vs `from_content`](#atomid--free_form-vs-from_content)
 - [Holder cascade](#holder-cascade)
 - [Querying atoms](#querying-atoms)
@@ -75,6 +76,56 @@ The Curry-Howard isomorphism says programs ≡ proofs. ckl reifies this with thr
 - non-structural → `Claim` (decisions, patterns, gotchas, …)
 
 Override with `--kind proof` when capturing an atom whose role is to back another claim. The Toulmin edges (`GROUNDS`, `WARRANT`, `REBUTTAL`) compose with kinds: a typical argument is `Proof --GROUNDS--> Claim` with a `Claim --WARRANT--> Claim` edge from the inference rule.
+
+## `AtomDiff` — coarse change description (v0.5.5)
+
+`AtomDiff` is the value returned by `Lens::put` (see [SKILL.md § Lens trait overview](../SKILL.md#lens-trait-overview-v055)). It captures what changed in an atom when an edited projection is pushed back through a lens.
+
+```rust
+#[non_exhaustive]
+pub enum AtomDiff {
+    NoOp,                                        // identity diff
+    Name { old: String, new: String },           // Atom::name changed
+    Content { old: String, new: String },        // projected body changed
+    Multi(Vec<AtomDiff>),                        // multiple field-level diffs
+}
+```
+
+| Variant | Semantics |
+|---|---|
+| `NoOp` | Identity — the projection round-tripped without modification. The value `put(atom, get(atom))` must produce when the lens is well-behaved. |
+| `Name { old, new }` | The atom's display name changed (M1 Markdown lens emits this when the user renames). |
+| `Content { old, new }` | The projected content body changed. "Content" is lens-specific — for M1 Markdown it's the body; an M2 Rust lens would diff rendered source. |
+| `Multi(Vec<AtomDiff>)` | Several field-level diffs at once. Required when a single edit touches both name and content. |
+
+### Identity flatten semantics
+
+`AtomDiff::is_identity()` recursively flattens `Multi`: a `Multi` whose inner diffs are all `NoOp` is also treated as identity. Lens implementations are not forced to collapse trivial vectors before returning.
+
+```rust
+AtomDiff::NoOp.is_identity()                                              // true
+AtomDiff::Multi(vec![]).is_identity()                                     // true (vacuously)
+AtomDiff::Multi(vec![AtomDiff::NoOp, AtomDiff::NoOp]).is_identity()       // true
+AtomDiff::Multi(vec![AtomDiff::NoOp, AtomDiff::Name {..}]).is_identity()  // false
+```
+
+⚠ **Foot-gun:** `Multi(vec![])` is vacuously identity (`all` over an empty iterator is `true`). It's *not* an error, but reviewers can't distinguish "no change" from "forgot to compute". Prefer explicit `AtomDiff::NoOp` (or `AtomDiff::identity()`) when you mean "no structural change".
+
+### `#[non_exhaustive]` — future-proofing
+
+`AtomDiff` is `#[non_exhaustive]`. Downstream pattern matches must include a `_ => …` arm:
+
+```rust
+match diff {
+    AtomDiff::NoOp => …,
+    AtomDiff::Name { old, new } => …,
+    AtomDiff::Content { old, new } => …,
+    AtomDiff::Multi(parts) => …,
+    _ => unreachable!("new AtomDiff variant — update lens consumer"),
+}
+```
+
+This lets v0.5.x+ add variants (e.g. `Holder`, structured `Frontmatter` patch) without a breaking API change. Consumers can opt into stricter handling by exhaustively matching what they know about and panicking on the catch-all.
 
 ## AtomId — `free_form` vs `from_content`
 

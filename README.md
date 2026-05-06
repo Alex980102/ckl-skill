@@ -52,7 +52,7 @@ npx skills add koslab/ckl-skill/ckl-search
 
 ## Prerequisites
 
-- `ckl` binary >= **0.5.3** on `$PATH`. Install:
+- `ckl` binary >= **0.5.5** on `$PATH`. Install:
   ```bash
   cargo install --git https://github.com/koslab/ckl ckl-cli
   ```
@@ -60,7 +60,7 @@ npx skills add koslab/ckl-skill/ckl-search
 
 ### What's new in ckl 0.5.x (this skill release)
 
-This is `ckl-skill` v0.2.0, which targets ckl 0.5.3. The skills now cover four new ckl minor releases since v0.4.9:
+This is `ckl-skill` v0.2.2, which targets ckl 0.5.5. The skills cover six ckl minor releases since v0.4.9:
 
 | ckl release | Adds | Skill that documents it |
 |---|---|---|
@@ -68,6 +68,8 @@ This is `ckl-skill` v0.2.0, which targets ckl 0.5.3. The skills now cover four n
 | `v0.5.1` Scoped Search II | Unified scope filters (`--org` / `--source-id` / `--holder` / `--kind` / `--container`) on `query` / `search` / `list` / `audit`, `ckl audit --persist-findings`, `--exclude-low`, `atom_coverage` metric, `ckl list organizations \| atoms` | `ckl-search`, `ckl-evolve` |
 | `v0.5.2` Agent-First Discovery | `ckl list all`, `--project-query` / `--org-query` / `--source-query` substring → ID resolvers | `ckl-search` |
 | `v0.5.3` Direct Blob Access | `ckl blob OID` (default / `--raw` / `--info` / `--refs`), `ckl blob list`, gix-backed CAS at `~/.ckl/blobs/` | `ckl-search`, `ckl-system` |
+| `v0.5.4` Blob Reverse Index | `blocks_by_blob_oid` reverse index → all `ckl blob` modes O(log N + k); `ckl blob reindex` one-shot back-fill; `ckl manage block create --blob-oid` testing/migration helper | `ckl-search`, `ckl-system`, `ckl-edit` |
+| `v0.5.5` Lens Foundation | `ckl-lens` crate (`Compiler` / `Lens` traits, `AtomDiff`, `LensVerifier` round-trip law), `ckl-lens-markdown` first concrete impl. CLI surface unchanged — library-level addition. Documents the atom-as-invariant pattern. | `ckl-knowledge`, `ckl-system` |
 
 ## Repository layout
 

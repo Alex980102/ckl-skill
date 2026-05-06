@@ -6,6 +6,9 @@ Heavy operations that mutate the underlying storage. Always **stop the daemon fi
 
 - [`ckl migrate-vectors`](#ckl-migrate-vectors)
 - [`ckl reembed`](#ckl-reembed)
+- [v0.5.0 — `StoragePort` trait amendment (L1b)](#v050--storageport-trait-amendment-l1b)
+- [v0.5.4 — `blocks_by_blob_oid` reverse index back-fill](#v054--blocks_by_blob_oid-reverse-index-back-fill)
+- [v0.5.5 — Lens crates (no migration)](#v055--lens-crates-no-migration)
 - [`ckl migrate` / `ckl migrate-finalize`](#ckl-migrate--ckl-migrate-finalize)
 - [Thresholds](#thresholds)
 
@@ -83,6 +86,24 @@ async fn count_atoms_by_kind(&self) -> Result<AtomKindCounts>;
 If you maintain a custom backend, add these methods before upgrading. The trait is **not** sealed — backwards-compatible only by being explicitly versioned. This is the only breaking change in the v0.5.x line.
 
 No data migration is required for the in-tree backend; existing blocks gain a default `Atom` envelope on next access (lazy upgrade), and `ckl status` will start reporting `atoms.{total, by_kind}` immediately.
+
+## v0.5.4 — `blocks_by_blob_oid` reverse index back-fill
+
+v0.5.4 introduced an inline `blocks_by_blob_oid` reverse index so `ckl blob <oid> --refs` and the default JSON envelope drop to O(log N + k) instead of scanning every block. New writes emit the index inline, but blocks written under v0.5.3 or earlier are not in the index until you back-fill.
+
+```bash
+ckl blob reindex --pretty
+```
+
+- **Idempotent** (set semantics) — safe to re-run.
+- **One-shot** — recommended once on first read post-upgrade. New writes maintain the index automatically.
+- **No data migration** required for content. The CAS store (`~/.ckl/blobs/`) is unchanged; only the SurrealKV side gets the inverse mapping.
+
+If you skip the back-fill, blob reads continue to work but `--refs` may report `refs_count: 0` for legacy blocks until you call `ckl blob reindex`.
+
+## v0.5.5 — Lens crates (no migration)
+
+v0.5.5 ships two new crates (`ckl-lens` foundation and `ckl-lens-markdown` first concrete impl) but **no CLI surface changes** and no on-disk format changes. There is nothing to migrate. Out-of-tree consumers that depend on `ckl-types::Atom` can opt into the bidirectional projection model by depending on `ckl-lens` and implementing the `Compiler` / `Lens` traits — see the `ckl-knowledge` skill for the conceptual overview and the well-behaved-lens contract.
 
 ## `ckl migrate` / `ckl migrate-finalize`
 

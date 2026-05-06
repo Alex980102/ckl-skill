@@ -2,9 +2,9 @@
 name: ckl-evolve
 description: Use when the user wants to run Kronos temporal evolution (cycles, weight updates, layer transitions Incoming→Low→Medium→High→Nucleus), check entity health (nucleus ratio, coherence, tensions), audit graph quality (duplicates, contradictions, severity-graded weak decisions, atom_coverage, stale blocks), persist audit findings as Claim atoms, reconcile via LLM, seed entities, ingest blocks, or graduate session entities to shared. Activate on mentions of "cycle", "evolve", "health", "coherence", "audit", "quality", "duplicates", "contradictions", "stale", "graduate", "Kronos", "seed entity", "tensions", "weak decisions", "severity", "atom coverage", "JTB+S", or any temporal-evolution / quality request.
 license: Apache-2.0
-compatibility: Requires `ckl` binary >= 0.5.3 on $PATH.
+compatibility: Requires `ckl` binary >= 0.5.5 on $PATH.
 metadata:
-  version: 0.2.0
+  version: 0.2.2
   upstream: https://github.com/koslab/ckl
   composes-with: ckl-knowledge
   prerequisite: ckl-system
