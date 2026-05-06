@@ -5,6 +5,125 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.4] - 2026-05-05
+
+Sync release. Bumps every skill from `ckl >= 0.5.6` to `ckl >= 0.5.7`,
+picking up upstream ckl 0.5.7 (knowledge-as-conversation: `ckl ask`
+FIPA-ACL Layer 4 surface). Headlined by a new canonical reference doc
+for the conversational layer with the full 11-aspect surface. All
+five skills aligned to the same `metadata.version: 0.2.4`. No
+breaking changes to skill structure — same five skills, same
+composition.
+
+### Added
+
+- **`ckl-knowledge`** (largest update — `ckl ask` reference doc + new SKILL.md section)
+  - **NEW canonical reference** [`references/ask.md`](skills/ckl-knowledge/references/ask.md):
+    - FIPA-ACL Layer 4 framing — third CKL working mode (atoms
+      `blk_8edc98757909_0`, `blk_11d2d0442289_0`).
+    - Crate decomposition: `ckl-ask` (foundation, W1 α / L3) +
+      `ckl-ask-toulmin` (W2 β) + `ckl-ask-lineage` (W2 γ) +
+      `ckl-ask-projection` (W2 δ).
+    - `AspectKindArg` clap variant ordering — declared order
+      mirrors the wave the aspect shipped in (`Default`,
+      `Projection`, then β group, then γ group). Don't reorder.
+    - `AskContext` params surface — `String → String` opaque map,
+      consumed today only by `projection` via `PARAM_TARGET = "target"`.
+    - **Identity envelope** (`default`) — full output shape with
+      role classification (Root → Orphan → Hub → Chain → Leaf
+      priority), edge bucketing (`Structural` / `Argumentation` /
+      `Semantic` / `Temporal`), atom envelope, neighbours top-3,
+      size hint, optional `argumentation_debt` nudge.
+    - **Toulmin trio** — five aspects (`grounds`, `warrants`,
+      `rebuttals`, `alternatives`, `conflicts`) with output shapes,
+      direction semantics, and the deliberate "structural
+      `CONTRADICTS` only — semantic detection lives in `ckl
+      audit`" boundary.
+    - **Lineage** — four aspects (`evolved`, `peers`, `used-by`,
+      `depends-on`) with output shapes, `derived_from` proxy
+      explanation (Replaces / Supersedes vs Kronos
+      `CausalEdgeType::DerivedFrom`), and `peers` weight default
+      0.5 + NaN→Equal sort coercion.
+    - **Projection** — `--as markdown` (M1 `MarkdownLens`) and
+      `--as rust` (M2 `RustLens` + `prettyplease`) with
+      atom-resolution rule, projected-surface contract carry-over
+      from [`lens.md`](skills/ckl-knowledge/references/lens.md),
+      and the always-present `warnings: []` slot.
+    - **`argumentation_debt` pedagogical loop** — cross-link to the
+      Toulmin workflow atom `blk_8c68386ad6f9_0`; closes the
+      `ckl audit` `weak_decisions` loop per-block.
+    - **Empty-bucket contract** — every documented slot always
+      present, never silently omitted (carries the v0.5.5
+      `Multi(vec![])` lesson, atom `blk_6deeebb828e1_0`).
+    - **`ckl ask` vs `ckl block` / `ckl context` / `ckl usages`**
+      decision table — when to use which.
+    - **Future** — `ckl tell` (CONFIRM / DISCONFIRM speech acts)
+      deferred to v0.5.8.
+  - **NEW SKILL.md section** "Conversational layer — `ckl ask`":
+    11-aspect speech-act table, FIPA-ACL Layer 4 framing, mode
+    contrast (search / capture / ask), pedagogical-loop summary,
+    worked example (`ckl search → ckl ask <blk> → ckl ask <blk>
+    --aspect grounds → ckl ask <blk> --aspect projection --as
+    markdown`), four anti-patterns, cross-link to ask.md.
+  - Quick Reference gains a top-row `ckl ask` entry pointing to the
+    new section.
+  - Frontmatter `description` extended with `ckl ask`, FIPA-ACL,
+    speech-act, identity envelope, argumentation_debt /
+    argumentation_summary, and the per-aspect trigger keywords.
+  - Frontmatter `metadata.primary-commands` adds `ask`.
+  - "Deeper material" link list expanded with `ask.md` and
+    `lens.md`.
+
+- **`ckl-search`**
+  - "Do NOT use Grep/Glob …" panel gains a v0.5.7 see-also pointer
+    to [ckl-knowledge § Conversational layer](skills/ckl-knowledge/SKILL.md#conversational-layer--ckl-ask)
+    — search to find, ask to understand.
+
+- **Cross-links**
+  - `references/atom.md` see-also adds `ask.md` — atom envelope is
+    surfaced as part of the `ckl ask` identity reply.
+  - `references/lens.md` see-also adds `ask.md` (Projection aspect)
+    and the TODO entry for `ckl ask --as` is now marked **shipped
+    in v0.5.7** with a deep-link to ask.md § Projection. M3
+    TypeScript follow-up bumped from v0.5.7 candidate to v0.5.8.
+
+- **Top-level**
+  - README "What's new" matrix extended with a `v0.5.7` row
+    covering `ckl ask`, the four sub-crates, the 11 aspects, and
+    the pedagogical `argumentation_debt` hook — with an inline
+    pointer to the new ask.md.
+  - README repository-layout block lists `lens` and `ask` under the
+    `ckl-knowledge/references/` column.
+
+### Changed
+
+- All five SKILL.md frontmatter `compatibility: Requires ckl binary >= 0.5.7`.
+- All five SKILL.md `metadata.version: 0.2.4`.
+- `skills/ckl-search/scripts/project-status.sh` requires `ckl >= 0.5.7`
+  (was `>= 0.5.6`).
+- `skills/ckl-system/scripts/reindex.sh` requires `ckl >= 0.5.7`
+  (was `>= 0.5.6`).
+- `template/SKILL.md` sample compatibility bumped to `ckl >= 0.5.7`.
+- `README.md`: prerequisites bumped to `ckl >= 0.5.7`; "What's new"
+  matrix extended with a v0.5.7 row; release-version label updated
+  to "v0.2.4 targets ckl 0.5.7".
+
+### Targets
+
+- `ckl` binary >= 0.5.7 on `$PATH`.
+
+### Notes
+
+- No breaking changes to skill structure (5 skills, same composition).
+- No new top-level skills — the `ckl ask` surface lives inside
+  `ckl-knowledge` because every aspect is read-only over knowledge
+  atoms / their containers.
+- Argumentation-summary contract: the identity envelope's
+  `argumentation_summary` field is **always present** (per the
+  empty-bucket contract). Pre-W3-ε it serializes as `null` for every
+  block; the field shape and key are documented as stable so
+  downstream callers can already key off it.
+
 ## [0.2.3] - 2026-05-05
 
 Sync release. Bumps every skill from `ckl >= 0.5.5` to `ckl >= 0.5.6`, picking

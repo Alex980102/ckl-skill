@@ -2,9 +2,9 @@
 name: my-skill
 description: One- or two-sentence description that front-loads the trigger keywords an agent must see to activate this skill. Mention every relevant tool, domain term, and verb the user might use. Up to 1024 characters. The agent picks this skill based on this field alone — be specific and include "Use when ..." with concrete trigger phrases.
 license: Apache-2.0
-compatibility: List binary / runtime / network requirements (e.g. `Requires foo CLI >= 1.0 on $PATH`, or for ckl-skill clones: `Requires ckl binary >= 0.5.6 on $PATH`). 1–500 characters.
+compatibility: List binary / runtime / network requirements (e.g. `Requires foo CLI >= 1.0 on $PATH`, or for ckl-skill clones: `Requires ckl binary >= 0.5.7 on $PATH`). 1–500 characters.
 metadata:
-  version: 0.2.3
+  version: 0.2.4
   upstream: https://github.com/your-org/your-repo
   composes-with: other-skill-1, other-skill-2
   primary-commands: cmd-a, cmd-b, cmd-c

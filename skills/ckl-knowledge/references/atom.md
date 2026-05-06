@@ -201,4 +201,5 @@ A graph dominated by `code` and starved of `proof` is a sign that decisions are 
 - [cip.md](cip.md) — capture envelope is part of every CIP intent
 - [argument-relations.md](argument-relations.md) — Toulmin edges compose with `AtomKind`
 - [distillation-rules.md](distillation-rules.md) — `ckl distill` workflow and content rules
+- [ask.md](ask.md) — `ckl ask <blk>` returns the atom envelope as part of the v0.5.7 identity reply
 - [../../ckl-search/references/blob.md](../../ckl-search/references/blob.md) — `ckl blob OID` reads atom content from the CAS store
